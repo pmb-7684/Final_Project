@@ -16,18 +16,25 @@ library(ggplot2)
 library(tidyverse)
 library(DT)
 library(shinyWidgets)
-library(plotly)
+library(caret)
+library(randomForest)
 
-df <- read_csv("finalDF2.csv")
-means_out <- read_csv("finalDF2.csv")
-data_input <- read_csv("finalDF2.csv")
+
 
 year1      <- df %>% select(YEAR) %>% distinct() %>% pull()
-division1  <- df %>% select(CMPD_PATROL_DIVISION) %>% distinct() %>% pull()
+division1  <- df %>% select(DIVISION) %>% distinct() %>% pull()
 
 
 not_sel <- "Not Selected"
 
+
+
+setBackgroundColor(
+  color = "Cornsilk",
+  gradient = c("linear"),
+  direction = c("bottom"),
+  shinydashboard = TRUE
+)
 
 about_page <- tabPanel(
   title = "About",
@@ -66,17 +73,21 @@ explore_page <- tabPanel(
     selectInput("num_var_1", "Numerical Variable 1", choices = c(not_sel)),
     selectInput("num_var_2", "Numerical Variable 2", choices = c(not_sel)),
     selectInput("fact_var", "Factor Variable", choices = c(not_sel)),
-    br(),br(),br(),
+    br(),
     actionButton("run_button", "Run Analysis", icon = icon("play")),
   ),
     mainPanel(
       tabsetPanel(
         tabPanel(
+          title = "Instructions", #icon = icon("fa-solid fa-info"),
+          column(10,includeMarkdown("help.md"))
+        ),
+        tabPanel(
           title = "Data Selection", icon = icon("table"),
           DTOutput("tbl")
         ),
         tabPanel(
-          title = "Visualization", icon = icon("bar-chart-o"),
+          title = "Visualization", #icon = icon("fa fa-bar-chart-o"),
           plotOutput("plot")
         ),
         tabPanel(
@@ -104,17 +115,44 @@ explore_page <- tabPanel(
 
 
 #Modeling Tab
-model_page <- tabPanel("Modeling", icon = icon("laptop"), titlePanel("Analysis"),
+model_page <- tabPanel("Modeling", icon = icon("laptop"), titlePanel("Modeling Data"),
                        sidebarLayout(
                          sidebarPanel(title = "Inputs",
-
+                              h3(" Add some instructions"),
+                              #Get proportions
+                              selectInput(inputId = "n_prop",
+                              label = "Choose Partition Proportion:",
+                              choices = c(0.65, 0.70, 0.75, 0.80),
+                              selected = .75),
+                              #Get Predictors
+                              uiOutput("colPredict"),
+                              div(style="text-align:left","Select Predictors:"),
+                              textOutput("selectedTextp"),
+                              #Get Preprocess
+                              checkboxInput("preprocessMe", 
+                                            "PreProcess with center & scale?", 
+                                            value = TRUE),
+                              #Get proportions
+                              selectInput(inputId = "predictYr",
+                              label = "Choose Year for Analysis:",
+                              choices = c(2022, 2021, 2020, 2019,2018, 2017),
+                              selected = 2019),
+                              br(),
+                              actionButton("run_model", "Run Analysis", icon = icon("play")),
+                              
                        ),
                        mainPanel(
                          tabsetPanel(
                            tabPanel("Modeling Info",
-                                    column(10,includeMarkdown("info.md"))),
-                        
-                           tabPanel("Modeling Fitting"),
+                                    column(10,includeMarkdown("info.md")),
+                                    DTOutput("tbl2"),
+                                    ),
+
+                           tabPanel("Modeling Fitting",
+                                    #plotOutput("treeplot"),
+                                    #verbatimTextOutput("glmsummary"),
+                                    plotOutput("rfplot"),
+                                    ), 
                       
                            tabPanel("Prediction", "Prediction")
    )
@@ -122,10 +160,9 @@ model_page <- tabPanel("Modeling", icon = icon("laptop"), titlePanel("Analysis")
  )
 )
 
-
 # Data Tab
 data_page <- tabPanel(
-  title = "Data",  icon = icon("archive"),
+  title = "Data",  #icon = icon("fa-solid fa-database"),
   fluidPage(titlePanel("Data"), 
     fluidRow(
     selectInput("YearGet", label = "Choose Year", year1, multiple = TRUE, selected = year1),
@@ -141,6 +178,7 @@ data_page <- tabPanel(
 # https://towardsdatascience.com/how-to-build-a-data-analysis-app-in-r-shiny-143bee9338f7
 
 ui <- navbarPage(
+  setBackgroundColor("LightYellow"),
   title = "Data Analyser",
   theme = shinytheme('united'),
   dashboard_page,
