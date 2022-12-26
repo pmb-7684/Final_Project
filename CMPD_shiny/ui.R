@@ -19,13 +19,13 @@ library(shinyWidgets)
 library(caret)
 library(randomForest)
 
+df <- read_csv("df2022.csv")
 
-
-year1      <- df %>% select(YEAR) %>% distinct() %>% pull()
+NIBRS1     <- df %>% select(NIBRS) %>% distinct() %>% pull()
 division1  <- df %>% select(DIVISION) %>% distinct() %>% pull()
-
-
-not_sel <- "Not Selected"
+location1  <- df %>% select(LOCATION) %>% distinct() %>% pull()
+Month1     <- df %>% select(MONTH) %>% distinct() %>% pull()
+not_sel    <- "Not Selected"
 
 
 
@@ -62,9 +62,13 @@ explore_page <- tabPanel(
     sidebarPanel(
       title = "Inputs",
     #Get Rows
-    selectInput("YearGet1", label = "Choose Year", year1, multiple = TRUE, selected = year1),
+    selectInput("NIBRSGet1", label = "Choose Crime", NIBRS1, multiple = TRUE, selected = NIBRS1),
     selectInput("DivisionGet1", label = "Choose Division", 
                 division1, multiple = TRUE, selected = division1),
+    selectInput("LocationGet1", label = "Choose Location", 
+                location1, multiple = TRUE, selected = location1),
+    selectInput("MonthGet1", label = "Choose Summer Month", 
+                Month1, multiple = TRUE, selected = Month1),
     #Get Columns
     uiOutput("colControls"),
     div(style="text-align:left","Select Columns:"),
@@ -163,12 +167,14 @@ model_page <- tabPanel("Modeling", icon = icon("laptop"), titlePanel("Modeling D
 # Data Tab
 data_page <- tabPanel(
   title = "Data",  #icon = icon("fa-solid fa-database"),
-  fluidPage(titlePanel("Data"), 
+  fluidPage(titlePanel("Data for Download"), 
     fluidRow(
-    selectInput("YearGet", label = "Choose Year", year1, multiple = TRUE, selected = year1),
+    selectInput("MonthGet", label = "Choose Summer Month(s)", Month1, multiple = TRUE, selected = Month1),
     selectInput("DivisionGet", label = "Choose Division", division1, multiple = TRUE, selected = division1),
+    selectInput("NIBRSGet", label = "Choose Crime", NIBRS1, multiple = TRUE, selected = NIBRS1),
+    selectInput("LocationGet", label = "Choose Location", location1, multiple = TRUE, selected = location1),
     downloadButton("download1","Download entire Table  as csv"),
-    mainPanel(DT::dataTableOutput("iris_dto"))
+    mainPanel(DT::dataTableOutput("cmpd_dto"))
         )
   )
 )

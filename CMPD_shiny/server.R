@@ -19,25 +19,13 @@ library(caret)
 library(randomForest)
 library(rpart)
 
-df <- read_csv("df.csv")
+df <- read_csv("df2022.csv")
 
-df2 <- df
-df2$STATUS <- as.factor(df2$STATUS)
-df2$STATUS <- factor(df2$STATUS, levels = c("Open", "Closed"), labels = c(0,1))
-df2$YEAR<-as.factor(df2$YEAR)
-df2$LOCATION<-as.factor(df2$LOCATION)
-df2$LOCATION <- factor(df2$LOCATION, levels = c("Outdoors", "Indoors", "Parking Lot", "Other","Parking Deck"), labels = c(0,1,2,3,4))
-df2$DIVISION <- as.factor(df2$DIVISION)
-df2$PLACE_TYPE <- as.factor(df2$PLACE_TYPE)
-df2$PLACE_DETAIL <- as.factor(df2$PLACE_DETAIL)
-df2$NIBRS <- as.factor(df2$NIBRS)
-df2$NPA <- as.factor(df2$NPA)
-
-
-year1      <- df %>% select(YEAR) %>% distinct() %>% pull()
+NIBRS1     <- df %>% select(NIBRS) %>% distinct() %>% pull()
 division1  <- df %>% select(DIVISION) %>% distinct() %>% pull()
-
-not_sel <- "Not Selected"
+location1  <- df %>% select(LOCATION) %>% distinct() %>% pull()
+Month1     <- df %>% select(MONTH) %>% distinct() %>% pull()
+not_sel    <- "Not Selected"
 
 
 
@@ -114,9 +102,6 @@ shinyServer(function(input, output) {
 # Filter data based on selections - Data
 output$table <- DT::renderDataTable(DT::datatable({
     data <- df
-    if (input$yr != "All") {
-      data <- data[data$YEAR == input$yr,]
-    }
     if (input$loc != "All") {
       data <- data[data$LOCATION == input$loc,]
     }
@@ -134,11 +119,11 @@ output$table <- DT::renderDataTable(DT::datatable({
   
 thedata <- reactive({
     df %>% 
-      filter(df$YEAR== input$YearGet & df$DIVISION== input$DivisionGet )
+      filter(df$MONTH== input$MonthGet & df$DIVISION== input$DivisionGet )
 })
   
 
-output$iris_dto <- renderDataTable({
+output$cmpd_dto <- renderDataTable({
     thedata()  %>% 
       datatable(extensions = 'Buttons',
                 options = list(
@@ -154,7 +139,7 @@ output$iris_dto <- renderDataTable({
   
 output$download1 <- downloadHandler(
     filename = function() {
-      paste("iris_", Sys.Date(), ".csv", sep="")
+      paste("cmpd_", Sys.Date(), ".csv", sep="")
     },
     content = function(file) {
       write.csv(thedata(), file)
@@ -178,16 +163,16 @@ output$download1 <- downloadHandler(
 thedata1 <- reactive({
     if(is.null(input$cols)){
       df %>% 
-        filter(df$YEAR== input$YearGet1 & df$DIVISION== input$DivisionGet1)
+        filter(df$MONTH== input$MonthGet1 | df$DIVISION== input$DivisionGet1 | df$NIBRS== input$NIBRSGet1 | df$LOCATION== input$LocationGet1)
     }else{
       df %>% 
-        filter(df$YEAR== input$YearGet1 & df$DIVISION== input$DivisionGet1) %>% 
+        filter(df$MONTH== input$MonthGet1 | df$DIVISION== input$DivisionGet1 | df$NIBRS== input$NIBRSGet1 | df$LOCATION== input$LocationGet1) %>% 
         dplyr::select({paste0(txtc())})
     }
     
 })
   
-output$tbl <- renderDataTable(head(thedata1(), 7))
+output$tbl <- renderDataTable(thedata1())
   
   
 #############################################################################################################   
@@ -299,26 +284,6 @@ Test  <- eventReactive(input$run_model,{
 
 
 
-# fit a random forest model
-fitrf <- eventReactive(input$run_model, {
-  Train <- Train()
-  
-  #resp  <- list(c("STATUS"))
-  #pick <- unlist(append(input$colsP, resp))
-  #newdata <- Training[, pick]
-  
-  
-  #fitrf <- train(STATUS ~ ., data = Train, method = "rf", 
-   #              trControl = trainControl(method = "cv", number = 5))
-  
-  fitrf <- randomForest(STATUS~., data = Train,
-                        importance = TRUE,
-                        proximity = TRUE)
-})
-  
-output$rfplot <- renderPlot({
-            varimport <- varImp(fitrf())
-             plot(varimport)
-})
+
   
 })
