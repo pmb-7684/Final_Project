@@ -171,7 +171,7 @@ data_page <- tabPanel(
     fluidRow(
     selectInput("MonthGet", label = "Choose Summer Month(s)", Month1, multiple = TRUE, selected = Month1),
     selectInput("DivisionGet", label = "Choose Division", division1, multiple = TRUE, selected = division1),
-    selectInput("NIBRSGet", label = "Choose Crime", NIBRS1, multiple = TRUE, selected = NIBRS1),
+    selectInput("NIBRSGet", label = "Choose Crime (NIBRS)", NIBRS1, multiple = TRUE, selected = NIBRS1),
     selectInput("LocationGet", label = "Choose Location", location1, multiple = TRUE, selected = location1),
     downloadButton("download1","Download entire Table  as csv"),
     mainPanel(DT::dataTableOutput("cmpd_dto"))

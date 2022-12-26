@@ -99,27 +99,18 @@ create_fact_var_table <- function(thedata1, fact_var){
 # Define server logic required 
 shinyServer(function(input, output) {
 
-# Filter data based on selections - Data
-output$table <- DT::renderDataTable(DT::datatable({
-    data <- df
-    if (input$loc != "All") {
-      data <- data[data$LOCATION == input$loc,]
-    }
-    if (input$div != "All") {
-      data <- data[data$DIVISION == input$div,]
-    }
-    data
-}))
-  
 
 #############################################################################################################
-# Part of the DATA section - this works
+# Part of the DATA section - reworked
 # https://community.rstudio.com/t/download-dataset-filtered-in-shiny-input/75770/2
+# https://stackoverflow.com/questions/42261496/selectinput-have-multiple-true-and-filter-based-off-that
 # this filter rows by year and division and allows user to download a csv for the new data
   
 thedata <- reactive({
-    df %>% 
-      filter(df$MONTH== input$MonthGet & df$DIVISION== input$DivisionGet )
+  thedata <- filter(df,df$MONTH %in% input$MonthGet)
+  thedata <- filter(thedata,thedata$DIVISION %in% input$DivisionGet)
+  thedata <- filter(thedata,thedata$LOCATION %in% input$LocationGet)
+  thedata <- filter(thedata,thedata$NIBRS %in% input$NIBRSGet)
 })
   
 
@@ -161,13 +152,18 @@ output$download1 <- downloadHandler(
   
   
 thedata1 <- reactive({
+    
     if(is.null(input$cols)){
-      df %>% 
-        filter(df$MONTH== input$MonthGet1 | df$DIVISION== input$DivisionGet1 | df$NIBRS== input$NIBRSGet1 | df$LOCATION== input$LocationGet1)
+      thedata1 <- filter(df,df$MONTH %in% input$MonthGet1)
+      thedata1 <- filter(thedata1,thedata1$DIVISION %in% input$DivisionGet1)
+      thedata1 <- filter(thedata1,thedata1$LOCATION %in% input$LocationGet1)
+      thedata1 <- filter(thedata1,thedata1$NIBRS %in% input$NIBRSGet1)
     }else{
-      df %>% 
-        filter(df$MONTH== input$MonthGet1 | df$DIVISION== input$DivisionGet1 | df$NIBRS== input$NIBRSGet1 | df$LOCATION== input$LocationGet1) %>% 
-        dplyr::select({paste0(txtc())})
+      thedata1 <- filter(df,df$MONTH %in% input$MonthGet1)
+      thedata1 <- filter(thedata1,thedata1$DIVISION %in% input$DivisionGet1)
+      thedata1 <- filter(thedata1,thedata1$LOCATION %in% input$LocationGet1)
+      thedata1 <- filter(thedata1,thedata1$NIBRS %in% input$NIBRSGet1)
+      thedata1 %>% dplyr::select({paste0(txtc())})
     }
     
 })
