@@ -73,10 +73,12 @@ explore_page <- tabPanel(
     uiOutput("colControls"),
     div(style="text-align:left","Select Columns:"),
     textOutput("selectedTextc"),
-    #Get select
-    selectInput("num_var_1", "Factor Variable 1", choices = c(not_sel)),
-    selectInput("num_var_2", "Factor Variable 2", choices = c(not_sel)),
-    selectInput("fact_var", "Factor Variable 3", choices = c(not_sel)),
+    #Get selection Summary Table
+    selectInput("num_var_1", "Variable 1 - Summary", choices = c(not_sel)),
+    selectInput("num_var_2", "Variable 2 - Summary", choices = c(not_sel)),
+    selectInput("fact_var", "Variable 3 - Summary", choices = c(not_sel)),
+    selectInput("num_var_3", "Variable 1 - Plot", choices = c(not_sel)),
+    selectInput("num_var_4", "Variable 2 - Plot Group By", choices = c(not_sel)),
     br(),
     actionButton("run_button", "Run Analysis", icon = icon("play")),
   ),
@@ -92,7 +94,17 @@ explore_page <- tabPanel(
         ),
         tabPanel(
           title = "Visualization", #icon = icon("fa fa-bar-chart-o"),
+          sidebarLayout(
+            sidebarPanel(
+              radioButtons("plotType", "Select a Plot Type",
+                           choices = list("Bar Chart"= 1, "Box Plot"= 2),
+              ),
+        ),
+        mainPanel(
           plotOutput("plot")
+        )
+          ), 
+
         ),
         tabPanel(
           title = "Summary", icon = icon("list-alt"),

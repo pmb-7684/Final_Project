@@ -72,7 +72,7 @@ draw_plot_1 <- function(thedata1, num_var_1, num_var_2, fact_var){
 }
 
 
-# https://cran.r-project.org/web/packages/data.table/vignettes/datatable-intro.html
+
 create_freq_table <- function(thedata1, var_1, var_2, fact_var){
 
   if(var_1 != not_sel & var_2 != not_sel & fact_var != not_sel){
@@ -172,22 +172,38 @@ observeEvent(thedata1(),{
     updateSelectInput(inputId = "num_var_1", choices = choices)
     updateSelectInput(inputId = "num_var_2", choices = choices)
     updateSelectInput(inputId = "fact_var", choices = choices)
+    updateSelectInput(inputId = "num_var_3", choices = choices)
+    updateSelectInput(inputId = "num_var_4", choices = choices)
     
 })
   
   var_1 <- eventReactive(input$run_button,input$num_var_1)
   var_2 <- eventReactive(input$run_button,input$num_var_2)
   fact_var <- eventReactive(input$run_button,input$fact_var)
+ 
   
+# Create Plots for exploration
+# https://data.library.virginia.edu/getting-started-with-shiny/
+
   
 plot <- eventReactive(input$run_button,{
-    draw_plot_1(thedata1(), var_1(), var_2(), fact_var())
+  if(input$plotType == 1){
+      ggplot(thedata1(),
+             aes_string(x = input$num_var_3)) +  geom_bar()
+  }else{
+      ggplot(thedata1(),
+           aes_string(x = input$num_var_3, x = input$num_var_4)) +  geom_boxplot()
+  }
 })
   
+
 output$plot <- renderPlot(plot())
+
   
 # Summary tables: this works for 3 variables... Need to clean up to address 1 or 2 variables
 # https://stackoverflow.com/questions/40623749/what-is-object-of-type-closure-is-not-subsettable-error-in-shiny
+# https://cran.r-project.org/web/packages/data.table/vignettes/datatable-intro.html
+
 output$var_1_title <- renderText(paste("Num Var 1:",var_1()))
 
 
@@ -199,7 +215,6 @@ output$var1_summary_table <- renderTable({
   list <- choice()
   var1_summary_table <- table(thedata1()[[list[1]]],thedata1()[[list[2]]], thedata1()[[list[3]]])
   })
-
 
 
 
