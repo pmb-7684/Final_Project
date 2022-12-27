@@ -29,12 +29,16 @@ not_sel    <- "Not Selected"
 
 
 
+
 setBackgroundColor(
   color = "Cornsilk",
   gradient = c("linear"),
   direction = c("bottom"),
   shinydashboard = TRUE
 )
+
+
+
 
 about_page <- tabPanel(
   title = "About",
@@ -46,6 +50,8 @@ about_page <- tabPanel(
 )
 
 
+
+
 dashboard_page <- tabPanel(
   title = "Dashboard",  icon = icon("dashboard"),
   titlePanel("Charlotte Mecklenburg Police Department (CMPD) Dashboard"),
@@ -55,6 +61,8 @@ dashboard_page <- tabPanel(
 )
 
 
+
+
 explore_page <- tabPanel(
   title = "Data Exploration",  icon = icon("list-alt"),
   titlePanel("Data Exploration"),
@@ -62,7 +70,7 @@ explore_page <- tabPanel(
     sidebarPanel(
       title = "Inputs",
     #Get Rows
-    selectInput("NIBRSGet1", label = "Choose Crime", NIBRS1, multiple = TRUE, selected = NIBRS1),
+    selectInput("NIBRSGet1", label = "Choose Crime(NIBRS)", NIBRS1, multiple = TRUE, selected = NIBRS1),
     selectInput("DivisionGet1", label = "Choose Division", 
                 division1, multiple = TRUE, selected = division1),
     selectInput("LocationGet1", label = "Choose Location", 
@@ -73,12 +81,14 @@ explore_page <- tabPanel(
     uiOutput("colControls"),
     div(style="text-align:left","Select Columns:"),
     textOutput("selectedTextc"),
+    #Get selection Plots
+    selectInput("num_var_3", "Variable 1 - Plot", choices = c(not_sel)),
+    selectInput("num_var_4", "Variable 2 - Plot Group By", choices = c(not_sel)),
     #Get selection Summary Table
     selectInput("num_var_1", "Variable 1 - Summary", choices = c(not_sel)),
     selectInput("num_var_2", "Variable 2 - Summary", choices = c(not_sel)),
     selectInput("fact_var", "Variable 3 - Summary", choices = c(not_sel)),
-    selectInput("num_var_3", "Variable 1 - Plot", choices = c(not_sel)),
-    selectInput("num_var_4", "Variable 2 - Plot Group By", choices = c(not_sel)),
+
     br(),
     actionButton("run_button", "Run Analysis", icon = icon("play")),
   ),
@@ -125,10 +135,8 @@ explore_page <- tabPanel(
   )
 )
 
-  
 
     
-
 
 #Modeling Tab
 model_page <- tabPanel("Modeling", icon = icon("laptop"), titlePanel("Modeling Data"),
@@ -140,19 +148,19 @@ model_page <- tabPanel("Modeling", icon = icon("laptop"), titlePanel("Modeling D
                               label = "Choose Partition Proportion:",
                               choices = c(0.65, 0.70, 0.75, 0.80),
                               selected = .75),
-                              #Get Predictors
-                              uiOutput("colPredict"),
-                              div(style="text-align:left","Select Predictors:"),
-                              textOutput("selectedTextp"),
                               #Get Preprocess
                               checkboxInput("preprocessMe", 
                                             "PreProcess with center & scale?", 
                                             value = TRUE),
-                              #Get proportions
-                              selectInput(inputId = "predictYr",
-                              label = "Choose Year for Analysis:",
-                              choices = c(2022, 2021, 2020, 2019,2018, 2017),
-                              selected = 2019),
+                              #Get CrossValidation
+                              numericInput("cross", 
+                                           "Select a number for cross validation:", 
+                                           value = 5 , min = 5, max = 20, step = 1),
+                              #Get Predictors
+                              uiOutput("colPredict"),
+                              div(style="text-align:left","Select Predictors:"),
+                              textOutput("selectedTextp"),
+
                               br(),
                               actionButton("run_model", "Run Analysis", icon = icon("play")),
                               
@@ -166,8 +174,8 @@ model_page <- tabPanel("Modeling", icon = icon("laptop"), titlePanel("Modeling D
 
                            tabPanel("Modeling Fitting",
                                     #plotOutput("treeplot"),
-                                    #verbatimTextOutput("glmsummary"),
-                                    plotOutput("rfplot"),
+                                    verbatimTextOutput("glmsummary"),
+                                    #plotOutput("rfplot"),
                                     ), 
                       
                            tabPanel("Prediction", "Prediction")
@@ -175,6 +183,9 @@ model_page <- tabPanel("Modeling", icon = icon("laptop"), titlePanel("Modeling D
   )
  )
 )
+
+
+
 
 # Data Tab
 data_page <- tabPanel(
@@ -190,6 +201,8 @@ data_page <- tabPanel(
         )
   )
 )
+
+
 
 
 # Main that will render pages

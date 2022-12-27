@@ -18,6 +18,7 @@ library(shinyWidgets)
 library(caret)
 library(randomForest)
 library(rpart)
+library(caTools)
 
 df <- read_csv("df2022.csv")
 
@@ -27,49 +28,6 @@ location1  <- df %>% select(LOCATION) %>% distinct() %>% pull()
 Month1     <- df %>% select(MONTH) %>% distinct() %>% pull()
 not_sel    <- "Not Selected"
 
-
-
-# plot
-draw_plot_1 <- function(thedata1, num_var_1, num_var_2, fact_var){
-  if(fact_var!=not_sel){
-    thedata1[,(fact_var):= as.factor(thedata1[,get(fact_var)])]
-  }
-  if(num_var_1 != not_sel & num_var_2 != not_sel & fact_var != not_sel){
-    ggplot(data = thedata1,
-           aes_string(x = num_var_1, y = num_var_2, color = fact_var)) +
-      geom_point()
-  }
-  else if(num_var_1 != not_sel & num_var_2 != not_sel & fact_var == not_sel){
-    ggplot(data = thedata1,
-           aes_string(x = num_var_1, y = num_var_2)) +
-      geom_point()
-  }
-  else if(num_var_1 != not_sel & num_var_2 == not_sel & fact_var != not_sel){
-    ggplot(data = thedata1,
-           aes_string(x = fact_var, y = num_var_1)) +
-      geom_violin()
-  }
-  else if(num_var_1 == not_sel & num_var_2 != not_sel & fact_var != not_sel){
-    ggplot(data = thedata1,
-           aes_string(x = fact_var, y = num_var_2)) +
-      geom_violin()
-  }
-  else if(num_var_1 != not_sel & num_var_2 == not_sel & fact_var == not_sel){
-    ggplot(data = thedata1,
-           aes_string(x = num_var_1)) +
-      geom_histogram()
-  }
-  else if(num_var_1 == not_sel & num_var_2 != not_sel & fact_var == not_sel){
-    ggplot(data = thedata1,
-           aes_string(x = num_var_2)) +
-      geom_histogram()
-  }
-  else if(num_var_1 == not_sel & num_var_2 == not_sel & fact_var != not_sel){
-    ggplot(data = thedata1,
-           aes_string(x = fact_var)) +
-      geom_bar()
-  }
-}
 
 
 
@@ -85,7 +43,6 @@ create_freq_table <- function(thedata1, var_1, var_2, fact_var){
 }
 
 
-############################################################################################################
 # Define server logic required 
 shinyServer(function(input, output, session) {
 
@@ -128,7 +85,7 @@ output$download1 <- downloadHandler(
 )  
 
 
-###############################################################################################################
+#############################################################################################################
 #COLUMNS and ROWS for Exploration TAB  
   
   output$colControls <- renderUI({
@@ -199,6 +156,7 @@ plot <- eventReactive(input$run_button,{
 
 output$plot <- renderPlot(plot())
 
+
   
 # Summary tables: this works for 3 variables... Need to clean up to address 1 or 2 variables
 # https://stackoverflow.com/questions/40623749/what-is-object-of-type-closure-is-not-subsettable-error-in-shiny
@@ -219,11 +177,11 @@ output$var1_summary_table <- renderTable({
 
 
 ###############################################################################################################
-# predictors for MODELING TAB  
+# Get predictors for MODELING TAB  
   
 output$colPredict <- renderUI({
     
-pickerInput(inputId="colsP", "Choose Predictors", choices = c("YEAR","DIVISION","NPA", "LOCATION", "PLACE_TYPE","PLACE_DETAIL","DESCRIPTION"), multiple = TRUE)
+pickerInput(inputId="colsP", "Choose Predictors", choices = c("YEAR","DIVISION","NPA", "LOCATION", "PLACE_TYPE","PLACE_DETAIL","NIBRS", "MONTH"), multiple = TRUE)
   })
   
   txtp <- reactive({ input$colsP })
@@ -231,38 +189,56 @@ pickerInput(inputId="colsP", "Choose Predictors", choices = c("YEAR","DIVISION",
   
 
   thedata2 <- eventReactive(input$run_model, {
-    debug_msg("predictor submitted")
 
-        thedata2 <- df2 %>% dplyr::select({paste0(txtp())}) 
+        thedata2 <- df %>% dplyr::select({paste0(txtp())}) 
 
   })
   
   output$tbl2 <- renderDataTable(head(thedata2(), 7))
-  
 
   
 ##########################################################################################################
-# Begin Processing Training and Testing Data
-## Split Data
+# Begin Processing Training and Testing Data - Split Data
+# https://www.statology.org/train-test-split-r/     (other methods to split)
 
 trainIndex <- eventReactive(input$run_model, {
-  debug_msg("index submitted")
-            data2 <- df2
-            trainIndex <- createDataPartition(data2$STATUS, p = input$n_prop , list = FALSE)
+            data2 <- thedata2()
+            trainIndex <- sample(c(TRUE,FALSE), nrow(data2), replace = TRUE, prob=c(input$n_prop, (1-input$n_prop)))
             })
   
 Train <- eventReactive(input$run_model,{
-             data2 <- df2  
-             Train <- data2[trainIndex(), ]
+             data2 <- thedata2()
+             Train <- data2[trainIndex,]
             })
       
 Test  <- eventReactive(input$run_model,{
-             data2 <- df2
-             Test  <- data2[-trainIndex(), ]
+             data2 <- thedata2()
+             Test  <- data2[!trainIndex,]
             })
 
 
+# fit glm with selected variables and option to centering/scaling
+fitglm <- eventReactive(input$run_model, {
+  Train <- Train()
+  
+  response <- list(c("STATUS"))
+  selected <- unlist(append(input$colPredict, response))
+  newdata <- Train[, selected]
+  
+  if (input$preprocessMe == 1) {
+    fitglm <- train(STATUS ~ ., data = newdata, method = "glm", family = "binomial", 
+                    preProcess = c("center", "scale"),
+                    trControl = trainControl(method = "cv", number = input$cross))
+  } else {
+    fitglm <- train(STATUS ~ ., data = newdata, method = "glm", family = "binomial", 
+                    trControl = trainControl(method = "cv", number = input$cross))
+  }
+})
 
+# glm summary
+output$glmsummary <- renderPrint({
+  summary(fitglm())
+})
 
   
 })
