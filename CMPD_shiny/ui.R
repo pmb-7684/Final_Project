@@ -74,9 +74,9 @@ explore_page <- tabPanel(
     div(style="text-align:left","Select Columns:"),
     textOutput("selectedTextc"),
     #Get select
-    selectInput("num_var_1", "Numerical Variable 1", choices = c(not_sel)),
-    selectInput("num_var_2", "Numerical Variable 2", choices = c(not_sel)),
-    selectInput("fact_var", "Factor Variable", choices = c(not_sel)),
+    selectInput("num_var_1", "Factor Variable 1", choices = c(not_sel)),
+    selectInput("num_var_2", "Factor Variable 2", choices = c(not_sel)),
+    selectInput("fact_var", "Factor Variable 3", choices = c(not_sel)),
     br(),
     actionButton("run_button", "Run Analysis", icon = icon("play")),
   ),
@@ -97,13 +97,13 @@ explore_page <- tabPanel(
         tabPanel(
           title = "Summary", icon = icon("list-alt"),
               fluidRow(
-                column(width = 4, strong(textOutput("num_var_1_title"))),
-                column(width = 4, strong(textOutput("num_var_2_title"))),
+                column(width = 4, strong(textOutput("var_1_title"))),
+                column(width = 4, strong(textOutput("var_2_title"))),
                 column(width = 4, strong(textOutput("fact_var_title")))
               ),
               fluidRow(
-                column(width = 4, tableOutput("num_var_1_summary_table")),
-                column(width = 4, tableOutput("num_var_2_summary_table")),
+                column(width = 4, tableOutput("var1_summary_table")),
+                column(width = 4, tableOutput("var2_summary_table")),
                 column(width = 4, tableOutput("fact_var_summary_table"))
               ),
 
@@ -170,9 +170,9 @@ data_page <- tabPanel(
   fluidPage(titlePanel("Data for Download"), 
     fluidRow(
     selectInput("MonthGet", label = "Choose Summer Month(s)", Month1, multiple = TRUE, selected = Month1),
-    selectInput("DivisionGet", label = "Choose Division", division1, multiple = TRUE, selected = division1),
-    selectInput("NIBRSGet", label = "Choose Crime (NIBRS)", NIBRS1, multiple = TRUE, selected = NIBRS1),
-    selectInput("LocationGet", label = "Choose Location", location1, multiple = TRUE, selected = location1),
+    selectInput("DivisionGet", label = "Choose Division(s)", division1, multiple = TRUE, selected = division1),
+    selectInput("NIBRSGet", label = "Choose Crimes (NIBRS)", NIBRS1, multiple = TRUE, selected = NIBRS1),
+    selectInput("LocationGet", label = "Choose Location(s)", location1, multiple = TRUE, selected = location1),
     downloadButton("download1","Download entire Table  as csv"),
     mainPanel(DT::dataTableOutput("cmpd_dto"))
         )

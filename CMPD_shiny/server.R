@@ -71,40 +71,30 @@ draw_plot_1 <- function(thedata1, num_var_1, num_var_2, fact_var){
   }
 }
 
-create_num_var_table <- function(thedata1, num_var){
-  if(num_var != not_sel){
-    col <- thedata1[,get(num_var)]
 
-    statistic <- c("mean", "median", "25th percentile", "95th percentile",
-                   "Maximum", "Minimum")
-    value <- c(round(mean(col),2), round(median(col),2),
-               round(max(col),2), round(min(col),2))
-    data.table(statistic, value)
+# https://cran.r-project.org/web/packages/data.table/vignettes/datatable-intro.html
+create_freq_table <- function(thedata1, var_1, var_2, fact_var){
+
+  if(var_1 != not_sel & var_2 != not_sel & fact_var != not_sel){
+    list <- c(var_1, var_2,fact_var)
+    freq_tbl <- table(thedata1[[list[1]]],thedata1[[list[2]]], thedata1[[list[3]]])
+  }
+  if(fact_var!=not_sel){
+    freq_tbl <- table(get(thedata1$fact_var))
   }
 }
-
-
-
-create_fact_var_table <- function(thedata1, fact_var){
-  if(fact_var != not_sel){
-    freq_tbl <- thedata1[,.N, by = get(fact_var)]
-    freq_tbl <- setnames(freq_tbl,c("factor_value", "count"))
-    freq_tbl
-  }
-}
-
 
 
 ############################################################################################################
 # Define server logic required 
-shinyServer(function(input, output) {
+shinyServer(function(input, output, session) {
 
 
 #############################################################################################################
 # Part of the DATA section - reworked
 # https://community.rstudio.com/t/download-dataset-filtered-in-shiny-input/75770/2
 # https://stackoverflow.com/questions/42261496/selectinput-have-multiple-true-and-filter-based-off-that
-# this filter rows by year and division and allows user to download a csv for the new data
+# this filter rows and allows user to download a csv for the new data
   
 thedata <- reactive({
   thedata <- filter(df,df$MONTH %in% input$MonthGet)
@@ -169,68 +159,46 @@ thedata1 <- reactive({
 })
   
 output$tbl <- renderDataTable(thedata1())
-  
-  
+
+
 #############################################################################################################   
 #Continue exploration plot and summary
 #https://github.com/MatePocs/rshiny_apps/blob/main/data_analyser/app.R
 #https://towardsdatascience.com/how-to-build-a-data-analysis-app-in-r-shiny-143bee9338f7
   
 observeEvent(thedata1(),{
+    #thedata_EDIT <- thedata1() %>% dplyr::select(-YEAR)
     choices <- c(not_sel,names(thedata1()))
     updateSelectInput(inputId = "num_var_1", choices = choices)
     updateSelectInput(inputId = "num_var_2", choices = choices)
     updateSelectInput(inputId = "fact_var", choices = choices)
+    
 })
   
-  num_var_1 <- eventReactive(input$run_button,input$num_var_1)
-  num_var_2 <- eventReactive(input$run_button,input$num_var_2)
+  var_1 <- eventReactive(input$run_button,input$num_var_1)
+  var_2 <- eventReactive(input$run_button,input$num_var_2)
   fact_var <- eventReactive(input$run_button,input$fact_var)
   
   
 plot <- eventReactive(input$run_button,{
-    draw_plot_1(thedata1(), num_var_1(), num_var_2(), fact_var())
+    draw_plot_1(thedata1(), var_1(), var_2(), fact_var())
 })
   
 output$plot <- renderPlot(plot())
   
-# 1-d summary tables
+# Summary tables: this works for 3 variables... Need to clean up to address 1 or 2 variables
+# https://stackoverflow.com/questions/40623749/what-is-object-of-type-closure-is-not-subsettable-error-in-shiny
+output$var_1_title <- renderText(paste("Num Var 1:",var_1()))
 
-output$num_var_1_title <- renderText(paste("Num Var 1:",num_var_1()))
 
-num_var_1_summary_table <- eventReactive(input$run_button,{
-  create_num_var_table(thedata1, num_var_1())
+choice <- reactive ({
+   choice <- c(input$num_var_1, input$num_var_2, input$fact_var)
 })
 
-output$num_var_1_summary_table <- renderTable(num_var_1_summary_table(),colnames = FALSE)
-
-output$num_var_2_title <- renderText(paste("Num Var 2:",num_var_2()))
-
-num_var_2_summary_table <- eventReactive(input$run_button,{
-  create_num_var_table(thedata1, num_var_2())
-})
-
-output$num_var_2_summary_table <- renderTable(num_var_2_summary_table(),colnames = FALSE)
-
-output$fact_var_title <- renderText(paste("Factor Var:",fact_var()))
-
-fact_var_summary_table <- eventReactive(input$run_button,{
-  create_fact_var_table(thedata1, fact_var())
-})
-
-output$fact_var_summary_table <- renderTable(fact_var_summary_table(),colnames = FALSE)
-
-
-# display debugging messages in R (if local) 
-# and in the console log (if running in shiny)
-debug_msg <- function(...) {
-  is_local <- Sys.getenv('SHINY_PORT') == ""
-  in_shiny <- !is.null(shiny::getDefaultReactiveDomain())
-  txt <- toString(list(...))
-  if (is_local) message(txt)
-  if (in_shiny) shinyjs::runjs(sprintf("console.debug(\"%s\")", txt))
-}
-
+output$var1_summary_table <- renderTable({
+  list <- choice()
+  var1_summary_table <- table(thedata1()[[list[1]]],thedata1()[[list[2]]], thedata1()[[list[3]]])
+  })
 
 
 
