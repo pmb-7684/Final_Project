@@ -178,7 +178,37 @@ model_page <- tabPanel("Modeling", icon = icon("laptop"), titlePanel("Modeling D
                                     #plotOutput("rfplot"),
                                     ), 
                       
-                           tabPanel("Prediction", "Prediction")
+                           tabPanel("Prediction", "Prediction",
+                                    selectInput("pickmodel", 
+                                                "Choose a model:", 
+                                                choices = c("GLM" = "glm", 
+                                                            "Classification Tree" = "tree", 
+                                                            "Random Forest" = "rf")),
+                                    selectInput("pickgender", 
+                                                "Choose gender:", 
+                                                choices = c("F", "M"), 
+                                                selected = "F"),
+                                    selectInput("pickgender", 
+                                                "Choose gender:", 
+                                                choices = c("F", "M"), 
+                                                selected = "F"),
+                                    selectInput("pickgender", 
+                                                "Choose gender:", 
+                                                choices = c("F", "M"), 
+                                                selected = "F"),
+                                    selectInput("pickgender", 
+                                                "Choose gender:", 
+                                                choices = c("F", "M"), 
+                                                selected = "F"),
+                                    selectInput("pickgender", 
+                                                "Choose gender:", 
+                                                choices = c("F", "M"), 
+                                                selected = "F"),
+                                    selectInput("pickgender", 
+                                                "Choose gender:", 
+                                                choices = c("F", "M"), 
+                                                selected = "F"),
+                                    actionButton("run_predict","Run Prediction", icon = icon("play")))
    )
   )
  )

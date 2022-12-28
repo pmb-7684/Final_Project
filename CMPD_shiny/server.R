@@ -30,19 +30,6 @@ not_sel    <- "Not Selected"
 
 
 
-
-create_freq_table <- function(thedata1, var_1, var_2, fact_var){
-
-  if(var_1 != not_sel & var_2 != not_sel & fact_var != not_sel){
-    list <- c(var_1, var_2,fact_var)
-    freq_tbl <- table(thedata1[[list[1]]],thedata1[[list[2]]], thedata1[[list[3]]])
-  }
-  if(fact_var!=not_sel){
-    freq_tbl <- table(get(thedata1$fact_var))
-  }
-}
-
-
 # Define server logic required 
 shinyServer(function(input, output, session) {
 
@@ -161,6 +148,7 @@ output$plot <- renderPlot(plot())
 # Summary tables: this works for 3 variables... Need to clean up to address 1 or 2 variables
 # https://stackoverflow.com/questions/40623749/what-is-object-of-type-closure-is-not-subsettable-error-in-shiny
 # https://cran.r-project.org/web/packages/data.table/vignettes/datatable-intro.html
+# https://towardsdatascience.com/how-to-make-a-professional-shiny-app-and-not-get-intimidated-with-r-991e636dd111
 
 output$var_1_title <- renderText(paste("Num Var 1:",var_1()))
 
@@ -184,46 +172,49 @@ output$colPredict <- renderUI({
 pickerInput(inputId="colsP", "Choose Predictors", choices = c("YEAR","DIVISION","NPA", "LOCATION", "PLACE_TYPE","PLACE_DETAIL","NIBRS", "MONTH"), multiple = TRUE)
   })
   
-  txtp <- reactive({ input$colsP })
+txtp <- reactive({ input$colsP })
   output$selectedTextp <- renderText({paste0(txtp() ,sep=", ") })
   
 
-  thedata2 <- eventReactive(input$run_model, {
+thedata2 <- eventReactive(input$run_model, {
+        response <- list(c("STATUS"))
+        selected <- unlist(append(txtp(), response))
 
-        thedata2 <- df %>% dplyr::select({paste0(txtp())}) 
-
+        thedata2 <- df %>% dplyr::select({paste0(selected)}) 
   })
   
-  output$tbl2 <- renderDataTable(head(thedata2(), 7))
+
+output$tbl2 <- renderDataTable(head(thedata2(), 7))
 
   
 ##########################################################################################################
 # Begin Processing Training and Testing Data - Split Data
 # https://www.statology.org/train-test-split-r/     (other methods to split)
+# okay, I see what the problem is ...thedata2() does not contain the response variable STATUS
+# reason for error - Warning: Error in createDataPartition: y must have at least 2 data points
+# fixed above and verified by modeling data output
 
 trainIndex <- eventReactive(input$run_model, {
             data2 <- thedata2()
-            trainIndex <- sample(c(TRUE,FALSE), nrow(data2), replace = TRUE, prob=c(input$n_prop, (1-input$n_prop)))
+            trainIndex <- createDataPartition(data2$STATUS, p = input$n_prop, list = FALSE)
             })
   
-Train <- eventReactive(input$run_model,{
+train <- eventReactive(input$run_model,{
              data2 <- thedata2()
-             Train <- data2[trainIndex,]
+             train1 <- data2[trainIndex(),]
             })
       
-Test  <- eventReactive(input$run_model,{
+test  <- eventReactive(input$run_model,{
              data2 <- thedata2()
-             Test  <- data2[!trainIndex,]
+             test  <- data2[!trainIndex(),]
             })
 
 
 # fit glm with selected variables and option to centering/scaling
 fitglm <- eventReactive(input$run_model, {
-  Train <- Train()
+  Train <- train()
   
-  response <- list(c("STATUS"))
-  selected <- unlist(append(input$colPredict, response))
-  newdata <- Train[, selected]
+  newdata <- thedata2()
   
   if (input$preprocessMe == 1) {
     fitglm <- train(STATUS ~ ., data = newdata, method = "glm", family = "binomial", 
