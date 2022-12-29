@@ -25,8 +25,10 @@ NIBRS1     <- df %>% select(NIBRS) %>% distinct() %>% pull()
 division1  <- df %>% select(DIVISION) %>% distinct() %>% pull()
 location1  <- df %>% select(LOCATION) %>% distinct() %>% pull()
 Month1     <- df %>% select(MONTH) %>% distinct() %>% pull()
+NPA1       <- df %>% select(NPA) %>% distinct() %>% pull()
+Type1       <- df %>% select(PLACE_TYPE) %>% distinct() %>% pull()
+Detail1       <- df %>% select(PLACE_DETAIL) %>% distinct() %>% pull()
 not_sel    <- "Not Selected"
-
 
 
 
@@ -37,19 +39,11 @@ setBackgroundColor(
   shinydashboard = TRUE
 )
 
-
-
-
 about_page <- tabPanel(
   title = "About",
   titlePanel("About"),icon = icon("archive"),
-  "Created with R Shiny",
-  br(),
-  "2022 December", br(),
   column(10,includeMarkdown("about.md"))
 )
-
-
 
 
 dashboard_page <- tabPanel(
@@ -61,8 +55,6 @@ dashboard_page <- tabPanel(
 )
 
 
-
-
 explore_page <- tabPanel(
   title = "Data Exploration",  icon = icon("list-alt"),
   titlePanel("Data Exploration"),
@@ -70,7 +62,7 @@ explore_page <- tabPanel(
     sidebarPanel(
       title = "Inputs",
     #Get Rows
-    selectInput("NIBRSGet1", label = "Choose Crime(NIBRS)", NIBRS1, multiple = TRUE, selected = NIBRS1),
+    selectInput("NIBRSGet1", label = "Choose Crime", NIBRS1, multiple = TRUE, selected = NIBRS1),
     selectInput("DivisionGet1", label = "Choose Division", 
                 division1, multiple = TRUE, selected = division1),
     selectInput("LocationGet1", label = "Choose Location", 
@@ -88,138 +80,172 @@ explore_page <- tabPanel(
     selectInput("num_var_1", "Variable 1 - Summary", choices = c(not_sel)),
     selectInput("num_var_2", "Variable 2 - Summary", choices = c(not_sel)),
     selectInput("fact_var", "Variable 3 - Summary", choices = c(not_sel)),
-
     br(),
     actionButton("run_button", "Run Analysis", icon = icon("play")),
   ),
-    mainPanel(
-      tabsetPanel(
-        tabPanel(
-          title = "Instructions", #icon = icon("fa-solid fa-info"),
-          column(10,includeMarkdown("help.md"))
+  mainPanel(
+    tabsetPanel(
+      tabPanel(
+        title = "Instructions", icon = icon("info"),
+        column(10,includeMarkdown("help.md"))
+      ),
+      tabPanel(
+        title = "Data Selection", icon = icon("table"),
+        DTOutput("tbl")
+      ),
+      tabPanel(
+        title = "Visualization", icon = icon("chart-simple"),
+        sidebarLayout(
+          sidebarPanel(
+            radioButtons("plotType", "Select a Plot Type",
+                         choices = list("Bar Chart"= 1, "Box Plot"= 2),
+            ),
+          ),
+          mainPanel(
+            plotOutput("plot")
+          )
+        ), 
+        
+      ),
+      tabPanel(
+        title = "Summary", icon = icon("list-alt"),
+        fluidRow(
+          column(width = 4, strong(textOutput("var_1_title"))),
+          column(width = 4, strong(textOutput("var_2_title"))),
+          column(width = 4, strong(textOutput("fact_var_title")))
         ),
-        tabPanel(
-          title = "Data Selection", icon = icon("table"),
-          DTOutput("tbl")
+        fluidRow(
+          column(width = 4, tableOutput("var1_summary_table")),
+          column(width = 4, tableOutput("var2_summary_table")),
+          column(width = 4, tableOutput("fact_var_summary_table"))
         ),
-        tabPanel(
-          title = "Visualization", #icon = icon("fa fa-bar-chart-o"),
-          sidebarLayout(
-            sidebarPanel(
-              radioButtons("plotType", "Select a Plot Type",
-                           choices = list("Bar Chart"= 1, "Box Plot"= 2),
-              ),
-        ),
-        mainPanel(
-          plotOutput("plot")
-        )
-          ), 
-
-        ),
-        tabPanel(
-          title = "Summary", icon = icon("list-alt"),
-              fluidRow(
-                column(width = 4, strong(textOutput("var_1_title"))),
-                column(width = 4, strong(textOutput("var_2_title"))),
-                column(width = 4, strong(textOutput("fact_var_title")))
-              ),
-              fluidRow(
-                column(width = 4, tableOutput("var1_summary_table")),
-                column(width = 4, tableOutput("var2_summary_table")),
-                column(width = 4, tableOutput("fact_var_summary_table"))
-              ),
-
-        )
+        
       )
     )
   )
+  )
 )
 
+  
 
     
+
 
 #Modeling Tab
 model_page <- tabPanel("Modeling", icon = icon("laptop"), titlePanel("Modeling Data"),
                        sidebarLayout(
                          sidebarPanel(title = "Inputs",
-                              h3(" Add some instructions"),
-                              #Get proportions
-                              selectInput(inputId = "n_prop",
-                              label = "Choose Partition Proportion:",
-                              choices = c(0.65, 0.70, 0.75, 0.80),
-                              selected = .75),
-                              #Get Preprocess
-                              checkboxInput("preprocessMe", 
-                                            "PreProcess with center & scale?", 
-                                            value = TRUE),
-                              #Get CrossValidation
-                              numericInput("cross", 
-                                           "Select a number for cross validation:", 
-                                           value = 5 , min = 5, max = 20, step = 1),
-                              #Get Predictors
-                              uiOutput("colPredict"),
-                              div(style="text-align:left","Select Predictors:"),
-                              textOutput("selectedTextp"),
+                         strong("Fitting Models"),br(),
+                         ("Select the proportion, center & scale, and predictor variables for each model - GLM,                               Classification tree, and Random Forest."),
+                          #tags$hr(style="border-color: black;"),
+                         #GLM
+                          #Get proportions
+                          strong("Generalized LM Modeling"),br(),
+                          selectInput(inputId = "n_prop",
+                          label = "Choose Partition Proportion:",
+                          choices = c(0.65, 0.70, 0.75, 0.80),
+                          selected = .75),
+                         #Get Preprocess
+                          checkboxInput("preprocessMe", 
+                                       "PreProcess with center & scale?", 
+                                       value = TRUE),
+                          #Get Predictors
+                          uiOutput("colPredict"),
+                          div(style="text-align:left","Select Predictors:"),
+                          textOutput("selectedTextp"),
+                         tags$hr(style="border-color: black;"),
 
-                              br(),
-                              actionButton("run_model", "Run Analysis", icon = icon("play")),
+                         # Classification
+                          #Get proportions
+                          strong("Classification Tree Modeling"),br(),
+                          selectInput(inputId = "n_prop_C",
+                                        label = "Choose Partition Proportion:",
+                                        choices = c(0.65, 0.70, 0.75, 0.80),
+                                        selected = .75),
+                         #Get Preprocess
+                          checkboxInput("preprocessMe_C", 
+                                       "PreProcess with center & scale?", 
+                                       value = TRUE),
+                          #Get Predictors
+                          uiOutput("colPredict_C"),
+                          div(style="text-align:left","Select Predictors:"),
+                          textOutput("selectedTextp_C"),
+                         tags$hr(style="border-color: black;"),
+                         
+                         # Random Forest
+                         #Get proportions
+                         strong("Classification Tree Modeling"),br(),
+                         selectInput(inputId = "n_prop_R",
+                                     label = "Choose Partition Proportion:",
+                                     choices = c(0.65, 0.70, 0.75, 0.80),
+                                     selected = .75),
+                         #Get Preprocess
+                         checkboxInput("preprocessMe_R", 
+                                       "PreProcess with center & scale?", 
+                                       value = TRUE),
+                         #Get Predictors
+                         uiOutput("colPredict_R"),
+                         div(style="text-align:left","Select Predictors:"),
+                         textOutput("selectedTextp_R"),
+                          br(),
+                          actionButton("run_model", "Run Models", icon = icon("play")),
+                         
+                         hr(style = "border-top: 1px solid #000000;"),
+                         
+                         #Create predictions
+                         strong("Prediction"),br(),
+                         ("Select predictor variables for the prediction.  Once complete, press Run Prediction and select the Prediction tab to view the results"),
+                         selectInput("pickmodel", 
+                                     "Choose a model:", 
+                                     choices = c("GLM (Generalized LM)" = "glm", 
+                                                 "Classification Tree" = "tree", 
+                                                 "Random Forest" = "rf")),
+                         selectInput("Division_ID", 
+                                     "Choose Division:", 
+                                     division1, multiple = FALSE, selected = "07"),
+                         selectInput("NPA", 
+                                     "Choose NPA:", 
+                                     NPA1, multiple = FALSE, selected = "371"),
+                         selectInput("Location", 
+                                     "Choose Location:", 
+                                     location1, multiple = FALSE, selected = "Indoors"),
+                         selectInput("Type", 
+                                     "Choose Type:", 
+                                     Type1, multiple = FALSE, selected = "Residental"),
+                         selectInput("Detail", 
+                                     "Choose Detail:", 
+                                     Detail1, multiple = FALSE, selected = "Apartment/Duplex"),
+                         selectInput("NIBRS", 
+                                     "Choose Crime:", 
+                                     NIBRS1, multiple = FALSE, selected = "All Other Offenses"),
+                         selectInput("Month", 
+                                     "Choose Summer Month:", 
+                                     Month1, multiple = FALSE, selected = "08"),
+                         actionButton("run_predict","Run Prediction", icon = icon("play"))
                               
                        ),
                        mainPanel(
                          tabsetPanel(
-                           tabPanel("Modeling Info",
+                           tabPanel("Modeling Info", icon = icon("info"),
                                     column(10,includeMarkdown("info.md")),
                                     DTOutput("tbl2"),
                                     ),
 
-                           tabPanel("Modeling Fitting",
+                           tabPanel("Modeling Fitting",icon = icon("table"),
                                     #plotOutput("treeplot"),
-                                    verbatimTextOutput("glmsummary"),
-                                    #plotOutput("rfplot"),
+                                    #verbatimTextOutput("glmsummary"),
+                                    plotOutput("rfplot"),
                                     ), 
                       
-                           tabPanel("Prediction", "Prediction",
-                                    selectInput("pickmodel", 
-                                                "Choose a model:", 
-                                                choices = c("GLM" = "glm", 
-                                                            "Classification Tree" = "tree", 
-                                                            "Random Forest" = "rf")),
-                                    selectInput("pickgender", 
-                                                "Choose gender:", 
-                                                choices = c("F", "M"), 
-                                                selected = "F"),
-                                    selectInput("pickgender", 
-                                                "Choose gender:", 
-                                                choices = c("F", "M"), 
-                                                selected = "F"),
-                                    selectInput("pickgender", 
-                                                "Choose gender:", 
-                                                choices = c("F", "M"), 
-                                                selected = "F"),
-                                    selectInput("pickgender", 
-                                                "Choose gender:", 
-                                                choices = c("F", "M"), 
-                                                selected = "F"),
-                                    selectInput("pickgender", 
-                                                "Choose gender:", 
-                                                choices = c("F", "M"), 
-                                                selected = "F"),
-                                    selectInput("pickgender", 
-                                                "Choose gender:", 
-                                                choices = c("F", "M"), 
-                                                selected = "F"),
-                                    actionButton("run_predict","Run Prediction", icon = icon("play")))
+                           tabPanel("Prediction", icon = icon("list-alt"))
    )
   )
  )
 )
 
-
-
-
 # Data Tab
 data_page <- tabPanel(
-  title = "Data",  #icon = icon("fa-solid fa-database"),
+  title = "Data",  icon = icon("table"),
   fluidPage(titlePanel("Data for Download"), 
     fluidRow(
     selectInput("MonthGet", label = "Choose Summer Month(s)", Month1, multiple = TRUE, selected = Month1),
@@ -231,8 +257,6 @@ data_page <- tabPanel(
         )
   )
 )
-
-
 
 
 # Main that will render pages
