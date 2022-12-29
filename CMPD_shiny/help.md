@@ -10,18 +10,20 @@ If you determine that you need to return an item that was previously removed, wh
 
 3.  To remove column elements, click within the `Choose Columns` area and use the mouse to select and deselect the desired columns.  Any column selected will appear with a check mark next to it.  By default all variables are included in the columns selection process.  In addition, the selected columns will be listed.
 
-4.  To immediately view the data set created from the steps above, please select the `Data Selection` tab. This section does not depend on the `Run Analysis`, so you can continue to make selections from the side panel.
+4.  To immediately view the data set created from the steps above, please select the `Data Selection` tab. This section does not depend on the `Run Analysis`, so you can continue to make selections from the side panel and view those changes.
 
 
 **Creating Charts**
 
 5.  Once satisfied with the data selection, please select the `Visualization` Tab.
 
-6.  Select the radio button for either Bar Chart or Box Plot.
+6.  Use the drop-down boxes to select Variable 1 - Plot, and Variable 2 - Plot Group by.
 
-7.  Use the drop-down boxes to select Variable 1 - Plot, and Variable 2 - Plot Group by.
+7.  Select the radio button for either Bar Chart or Box Plot.
 
 8.  Click `Run Analysis`.
+
+Note: If you decide to update the chart type, you must click `Run Analysis` to display the new chart.
 
 
 **Creating Summary Tables**

@@ -8,7 +8,7 @@ It contains the following features:
 
 `Year	Incident Report ID	Location	City	State	Zip	X-Coordinate	Y-Coordinate	Latitude	Longitude	Division ID	CMPD Patrol Division	Neighborhood Profile Area ID (NPA)	Date Reported	Date Incident Began	Date Incident End	Address Description	Location Type Description	Place Type Description	Place Detail Description	Clearance Status	Clearance Detail Status	Clearance Date	Highest NIBRS Code	Highest NIBRS Description`
 
-This data has many attributes (or features) that represent the similar things.  For this project, only 10 attributes are used: Year, Division, Division_ID, NPA, Location, Place_Type, Place_Detail, NIBRS, Month, and Status.  
+This data has many attributes (or features) that represent the similar things.  For this project, only 10 attributes are used: Year, Division, NPA, Location, Place_Type, Place_Detail, NIBRS, and Status.  
 
 The tasks used to complete the data cleaning can be viewed in the .rmd file named shiny_CMPD. After data cleaning, only approximately 13,599 observation are used for the project.
 
@@ -39,7 +39,7 @@ This tab allows the user to select one of the models for prediction. You have th
 
 **Data**
 
-The tab allows the user to scroll through the data set and subset it by rows and columns.  The user also has the ability to save the subsetted data as a .csv file.
+The tab allows the user to scroll through the data set and subset it by rows and columns.  The user also has the ability to save the subsetted data as a .csv file, pdf, or as a copy.
 
 
 **Created with R Shiny**

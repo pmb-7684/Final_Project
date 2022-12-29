@@ -1,11 +1,10 @@
 #
-# This is the user-interface definition of a Shiny web application. You can
-# run the application by clicking 'Run App' above.
+# This is the server logic of a Shiny web application. You can run the
+# application by clicking 'Run App' above.
 #
-# Find out more about building applications with Shiny here:
+# 
 #
-#    https://mastering-shiny.org/action-layout.html
-#
+#    
 
 library(shiny)
 library(shinydashboard)
@@ -39,11 +38,16 @@ setBackgroundColor(
   shinydashboard = TRUE
 )
 
+
+
+
 about_page <- tabPanel(
   title = "About",
   titlePanel("About"),icon = icon("archive"),
   column(10,includeMarkdown("about.md"))
 )
+
+
 
 
 dashboard_page <- tabPanel(
@@ -53,6 +57,8 @@ dashboard_page <- tabPanel(
     img(src = 'pic_skyline1.jpeg', height = 700, width = 900, align = "right")
   )
 )
+
+
 
 
 explore_page <- tabPanel(
@@ -125,8 +131,6 @@ explore_page <- tabPanel(
   )
   )
 )
-
-  
 
     
 
@@ -243,6 +247,9 @@ model_page <- tabPanel("Modeling", icon = icon("laptop"), titlePanel("Modeling D
  )
 )
 
+
+
+
 # Data Tab
 data_page <- tabPanel(
   title = "Data",  icon = icon("table"),
@@ -252,6 +259,10 @@ data_page <- tabPanel(
     selectInput("DivisionGet", label = "Choose Division(s)", division1, multiple = TRUE, selected = division1),
     selectInput("NIBRSGet", label = "Choose Crimes (NIBRS)", NIBRS1, multiple = TRUE, selected = NIBRS1),
     selectInput("LocationGet", label = "Choose Location(s)", location1, multiple = TRUE, selected = location1),
+    #Get Columns
+    uiOutput("colControls_D"),
+    div(style="text-align:left","Select Columns:"),
+    textOutput("selectedTextc_D"),
     downloadButton("download1","Download entire Table  as csv"),
     mainPanel(DT::dataTableOutput("cmpd_dto"))
         )
@@ -259,8 +270,7 @@ data_page <- tabPanel(
 )
 
 
-# Main that will render pages
-# https://towardsdatascience.com/how-to-build-a-data-analysis-app-in-r-shiny-143bee9338f7
+# Main to render pages
 
 ui <- navbarPage(
   setBackgroundColor("LightYellow"),
@@ -274,3 +284,7 @@ ui <- navbarPage(
 )
 
   
+
+# Helper sites for UI portion
+# https://stackoverflow.com/questions/43592163/horizontal-rule-hr-in-r-shiny-sidebar
+# https://towardsdatascience.com/how-to-build-a-data-analysis-app-in-r-shiny-143bee9338f7

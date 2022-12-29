@@ -3,10 +3,18 @@
 
 **Generalized Linear Regression Model**
 
-This regression model is an extension of linear general model for situations where the outcomes are not normally distributed nor do they always have continuous variables.  With this model, it allows for both continuous and categorical predictors.
+This regression model is an extension of linear general model for situations where the outcomes are not normally distributed nor do they always have continuous variables. It generalizes linear regression by allowing the linear model to be related to the response variable via a link function. With this model, it allows for both continuous and categorical predictors.
 
+The GLM consists of three elements:
 
-This model is suitable where the outcome variable variables binary which is the case for this project (Open and Closed).  It can be used for outcomes for categorical variables, count data, and continuous variables skewed.
+1. A particular distribution for modeling $Y$,
+2. A linear predictor $\eta =X\beta$, and
+3. A link function such that $E(Y\mid X)=\mu =g^{-1}(\eta )$.
+
+When $a \ne 0$, there are two solutions to $(ax^2 + bx + c = 0)$ and they are 
+$$ x = {-b \pm \sqrt{b^2-4ac} \over 2a} $$
+
+This model is suitable where the outcome variable is binary. This is the case for this project.  We are using predictor variables to predict if STATUS (of the crime) is Open or Closed.  This model can be used where outcomes are for categorical variables, count data, and continuous variables skewed.
 
 
 
@@ -29,9 +37,7 @@ The pro for using Random forest are reduced risk of overfitting, flexibility (it
 
 The con for Random Forest is it can be slow as the algorithm grows trees which can affect it's optimization and it requires more resources.
 
-p("\\(\\frac{\\Gamma(\\alpha+\\beta)}{\\Gamma(\\alpha)\\Gamma(\\beta)}\\theta^{\\alpha-1}(1-\\theta)^{\\beta-1}\\)")
 
-h5("\\(\\alpha\\) Value (> 0)")
 
 <!DOCTYPE html>
 <html>

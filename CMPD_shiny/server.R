@@ -2,10 +2,9 @@
 # This is the server logic of a Shiny web application. You can run the
 # application by clicking 'Run App' above.
 #
-# Find out more about building applications with Shiny here:
+# 
 #
 #    
-#
 
 library(shiny)
 library(shinydashboard)
@@ -41,12 +40,32 @@ shinyServer(function(input, output, session) {
 # https://community.rstudio.com/t/download-dataset-filtered-in-shiny-input/75770/2
 # https://stackoverflow.com/questions/42261496/selectinput-have-multiple-true-and-filter-based-off-that
 # this filter rows and allows user to download a csv for the new data
+
+# column selection
+output$colControls_D <- renderUI({
+    
+    pickerInput(inputId="cols_D", "Choose Columns", choices= df %>% colnames(),
+                multiple = TRUE)
+})
   
+txtc_D <- reactive({ input$cols_D })
+output$selectedTextc_D <- renderText({paste0(txtc_D() ,sep=", ") })
+
+# combine column with row selection - creates thedata()
 thedata <- reactive({
+  
+if(is.null(input$cols_D)){
   thedata <- filter(df,df$MONTH %in% input$MonthGet)
   thedata <- filter(thedata,thedata$DIVISION %in% input$DivisionGet)
   thedata <- filter(thedata,thedata$LOCATION %in% input$LocationGet)
   thedata <- filter(thedata,thedata$NIBRS %in% input$NIBRSGet)
+}else{
+  thedata <- filter(df,df$MONTH %in% input$MonthGet)
+  thedata <- filter(thedata,thedata$DIVISION %in% input$DivisionGet)
+  thedata <- filter(thedata,thedata$LOCATION %in% input$LocationGet)
+  thedata <- filter(thedata,thedata$NIBRS %in% input$NIBRSGet)
+  thedata %>% dplyr::select({paste0(txtc_D())})
+}
 })
   
 
@@ -113,7 +132,7 @@ output$tbl <- renderDataTable(thedata1())
 #https://towardsdatascience.com/how-to-build-a-data-analysis-app-in-r-shiny-143bee9338f7
 
 observeEvent(thedata1(),{
-  #thedata_EDIT <- thedata1() %>% dplyr::select(-YEAR)
+
   choices <- c(not_sel,names(thedata1()))
   updateSelectInput(inputId = "num_var_1", choices = choices)
   updateSelectInput(inputId = "num_var_2", choices = choices)
@@ -309,3 +328,9 @@ output$tbl2 <- renderDataTable(head(thedata2(), 7))
 
   
 })
+
+
+# Other helpful sites
+# https://github.blog/2022-05-19-math-support-in-markdown/          Helpful with .md files with mathjax
+
+
