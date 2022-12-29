@@ -138,68 +138,68 @@ explore_page <- tabPanel(
 #Modeling Tab
 model_page <- tabPanel("Modeling", icon = icon("laptop"), titlePanel("Modeling Data"),
                        sidebarLayout(
-                         sidebarPanel(title = "Inputs",
-                         strong("Fitting Models"),br(),
-                         ("Select the proportion, center & scale, and predictor variables for each model - GLM,                               Classification tree, and Random Forest."),
-                          #tags$hr(style="border-color: black;"),
-                         #GLM
-                          #Get proportions
-                          strong("Generalized LM Modeling"),br(),
-                          selectInput(inputId = "n_prop",
-                          label = "Choose Partition Proportion:",
-                          choices = c(0.65, 0.70, 0.75, 0.80),
-                          selected = .75),
-                         #Get Preprocess
-                          checkboxInput("preprocessMe", 
+                        sidebarPanel(title = "Inputs",
+                        strong("Fitting Models"),br(),
+                        ("Select the proportion, center & scale, and predictor variables for each model - GLM,                             Classification tree, and Random Forest."),
+                        br(),
+                        #GLM
+                        #Get proportions
+                        br(),strong("Generalized LM Modeling"),br(),
+                        selectInput(inputId = "n_prop",
+                        label = "Choose Partition Proportion:",
+                        choices = c(0.65, 0.70, 0.75, 0.80),
+                        selected = .75),
+                        #Get Preprocess
+                        checkboxInput("preprocessMe", 
                                        "PreProcess with center & scale?", 
                                        value = TRUE),
-                          #Get Predictors
-                          uiOutput("colPredict"),
-                          div(style="text-align:left","Select Predictors:"),
-                          textOutput("selectedTextp"),
-                         tags$hr(style="border-color: black;"),
+                        #Get Predictors
+                        uiOutput("colPredict"),
+                        div(style="text-align:left","Select Predictors:"),
+                        textOutput("selectedTextp"),
+                        tags$hr(style="border-color: black;"),
 
-                         # Classification
-                          #Get proportions
-                          strong("Classification Tree Modeling"),br(),
-                          selectInput(inputId = "n_prop_C",
+                        # Classification
+                        #Get proportions
+                        strong("Classification Tree Modeling"),br(),
+                        selectInput(inputId = "n_prop_C",
                                         label = "Choose Partition Proportion:",
                                         choices = c(0.65, 0.70, 0.75, 0.80),
                                         selected = .75),
-                         #Get Preprocess
-                          checkboxInput("preprocessMe_C", 
+                        #Get Preprocess
+                        checkboxInput("preprocessMe_C", 
                                        "PreProcess with center & scale?", 
                                        value = TRUE),
-                          #Get Predictors
-                          uiOutput("colPredict_C"),
-                          div(style="text-align:left","Select Predictors:"),
-                          textOutput("selectedTextp_C"),
-                         tags$hr(style="border-color: black;"),
+                        #Get Predictors
+                        uiOutput("colPredict_C"),
+                        div(style="text-align:left","Select Predictors:"),
+                        textOutput("selectedTextp_C"),
+                        tags$hr(style="border-color: black;"),
                          
-                         # Random Forest
-                         #Get proportions
-                         strong("Classification Tree Modeling"),br(),
-                         selectInput(inputId = "n_prop_R",
+                        # Random Forest
+                        #Get proportions
+                        strong("Classification Tree Modeling"),br(),
+                        selectInput(inputId = "n_prop_R",
                                      label = "Choose Partition Proportion:",
                                      choices = c(0.65, 0.70, 0.75, 0.80),
                                      selected = .75),
-                         #Get Preprocess
-                         checkboxInput("preprocessMe_R", 
+                        #Get Preprocess
+                        checkboxInput("preprocessMe_R", 
                                        "PreProcess with center & scale?", 
                                        value = TRUE),
-                         #Get Predictors
-                         uiOutput("colPredict_R"),
-                         div(style="text-align:left","Select Predictors:"),
-                         textOutput("selectedTextp_R"),
-                          br(),
-                          actionButton("run_model", "Run Models", icon = icon("play")),
+                        #Get Predictors
+                        uiOutput("colPredict_R"),
+                        div(style="text-align:left","Select Predictors:"),
+                        textOutput("selectedTextp_R"),
+                        br(),
+                        actionButton("run_model", "Run Models", icon = icon("play")),
                          
-                         hr(style = "border-top: 1px solid #000000;"),
+                        hr(style = "border-top: 1px solid #000000;"),
                          
-                         #Create predictions
-                         strong("Prediction"),br(),
-                         ("Select predictor variables for the prediction.  Once complete, press Run Prediction and select the Prediction tab to view the results"),
-                         selectInput("pickmodel", 
+                        #Create predictions
+                        strong("Prediction"),br(),
+                        ("Select predictor variables for the prediction.  Once complete, press Run Prediction and select the Prediction tab to view the results"),
+                        selectInput("pickmodel", 
                                      "Choose a model:", 
                                      choices = c("GLM (Generalized LM)" = "glm", 
                                                  "Classification Tree" = "tree", 
@@ -268,6 +268,8 @@ data_page <- tabPanel(
         )
   )
 )
+
+
 
 
 # Main to render pages

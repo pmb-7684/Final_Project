@@ -41,7 +41,7 @@ shinyServer(function(input, output, session) {
 # https://stackoverflow.com/questions/42261496/selectinput-have-multiple-true-and-filter-based-off-that
 # this filter rows and allows user to download a csv for the new data
 
-# column selection
+# column selection for DATA tab
 output$colControls_D <- renderUI({
     
     pickerInput(inputId="cols_D", "Choose Columns", choices= df %>% colnames(),
@@ -51,7 +51,7 @@ output$colControls_D <- renderUI({
 txtc_D <- reactive({ input$cols_D })
 output$selectedTextc_D <- renderText({paste0(txtc_D() ,sep=", ") })
 
-# combine column with row selection - creates thedata()
+# combine column with row selection for DATA tab - creates thedata()
 thedata <- reactive({
   
 if(is.null(input$cols_D)){
@@ -93,8 +93,8 @@ output$download1 <- downloadHandler(
 )  
 
 
-###############################################################################################################
-#COLUMNS and ROWS for Exploration TAB  
+##############################################################################################################
+#Columns and rows for Data Exploration Tab- creates thedata1()
   
   output$colControls <- renderUI({
     
@@ -127,7 +127,7 @@ output$tbl <- renderDataTable(thedata1())
 
 
 #############################################################################################################   
-#Continue exploration plot and summary
+#Continue Data exploration tab 
 #https://github.com/MatePocs/rshiny_apps/blob/main/data_analyser/app.R
 #https://towardsdatascience.com/how-to-build-a-data-analysis-app-in-r-shiny-143bee9338f7
 
@@ -150,7 +150,6 @@ fact_var <- eventReactive(input$run_button,input$fact_var)
 # Create Plots for exploration
 # https://data.library.virginia.edu/getting-started-with-shiny/
   
-  
   plot <- eventReactive(input$run_button,{
     if(input$plotType == 1){
       ggplot(thedata1(),
@@ -169,7 +168,7 @@ fact_var <- eventReactive(input$run_button,input$fact_var)
 # https://cran.r-project.org/web/packages/data.table/vignettes/datatable-intro.html
 # https://towardsdatascience.com/how-to-make-a-professional-shiny-app-and-not-get-intimidated-with-r-991e636dd111
 
-output$var_1_title <- renderText(paste("Num Var 1:",var_1()))
+output$var_1_title <- renderText(paste("Var 1:",var_1(),"Var 2:",var_2(),"Var 3:",fact_var()))
 
 
 choice <- reactive ({
@@ -184,11 +183,11 @@ output$var1_summary_table <- renderTable({
 
 
 ###############################################################################################################
-# predictors for MODELING TAB  
-#GLM
+# Predictor selection for Modeling Tab 
+# GLM           creates thedata2()
 output$colPredict <- renderUI({
     
-pickerInput(inputId="colsP", "Choose Predictors", choices = c("YEAR","DIVISION","NPA", "LOCATION", "PLACE_TYPE","PLACE_DETAIL","DESCRIPTION"), multiple = TRUE)
+pickerInput(inputId="colsP", "Choose Predictors", choices = c("DIVISION","NPA", "LOCATION", "PLACE_TYPE","PLACE_DETAIL","DESCRIPTION", "NIBRS","MONTH"), multiple = TRUE)
   })
   
   txtp <- reactive({ input$colsP })
@@ -205,36 +204,44 @@ pickerInput(inputId="colsP", "Choose Predictors", choices = c("YEAR","DIVISION",
 output$tbl2 <- renderDataTable(head(thedata2(), 7))
   
 
-# Classification 
+# Classification           creates thedata3() 
   output$colPredict_C <- renderUI({
     
-    pickerInput(inputId="colsP_C", "Choose Predictors", choices = c("YEAR","DIVISION","NPA", "LOCATION", "PLACE_TYPE","PLACE_DETAIL","DESCRIPTION"), multiple = TRUE)
+    pickerInput(inputId="colsP_C", "Choose Predictors", choices = c("DIVISION","NPA", "LOCATION", "PLACE_TYPE","PLACE_DETAIL","DESCRIPTION","NIBRS", "MONTH"), multiple = TRUE)
   })
   
   txtp_C <- reactive({ input$colsP_C })
   output$selectedTextp_C <- renderText({paste0(txtp_C() ,sep=", ") })
   
-
-  output$tbl2 <- renderDataTable(head(thedata2(), 7))
+  thedata3 <- eventReactive(input$run_model, {
+    response <- list(c("STATUS"))
+    selected <- unlist(append(txtp_C(), response))
+    
+    thedata3 <- df %>% dplyr::select({paste0(selected)}) 
+  })
   
-# Random Forest 
+# Random Forest           creates thedata4() 
   output$colPredict_R <- renderUI({
     
-    pickerInput(inputId="colsP_R", "Choose Predictors", choices = c("YEAR","DIVISION","NPA", "LOCATION", "PLACE_TYPE","PLACE_DETAIL","DESCRIPTION"), multiple = TRUE)
+    pickerInput(inputId="colsP_R", "Choose Predictors", choices = c("DIVISION","NPA", "LOCATION", "PLACE_TYPE","PLACE_DETAIL","DESCRIPTION","NIBRS", "MONTH"), multiple = TRUE)
   })
   
   txtp_R <- reactive({ input$colsP_R })
   output$selectedTextp_R <- renderText({paste0(txtp_R() ,sep=", ") })
   
+  thedata4 <- eventReactive(input$run_model, {
+    response <- list(c("STATUS"))
+    selected <- unlist(append(txtp_R(), response))
+    
+    thedata4 <- df %>% dplyr::select({paste0(selected)}) 
+  })
   
-  output$tbl2 <- renderDataTable(head(thedata2(), 7))
-  
-  ##########################################################################################################
-  # Begin Processing Training and Testing Data - Split Data
-  # https://www.statology.org/train-test-split-r/     (other methods to split)
-  # okay, I see what the problem is ...thedata2() does not contain the response variable STATUS
-  # reason for error - Warning: Error in createDataPartition: y must have at least 2 data points
-  # fixed above and verified by modeling data output
+##########################################################################################################
+# Begin Processing Training and Testing Data - Split Data
+# https://www.statology.org/train-test-split-r/     (other methods to split)
+# okay, I see what the problem is ...thedata2() does not contain the response variable STATUS
+# reason for error - Warning: Error in createDataPartition: y must have at least 2 data points
+# fixed above and verified by modeling data output
   
   trainIndex <- eventReactive(input$run_model, {
     data2 <- thedata2()
@@ -252,8 +259,8 @@ output$tbl2 <- renderDataTable(head(thedata2(), 7))
   })
   
   
-  # fit glm with selected variables and option to centering/scaling
-  # https://stackoverflow.com/questions/64768969/r-shiny-creating-factor-variables-and-defining-levels
+# fit glm with selected variables and option to centering/scaling
+# https://stackoverflow.com/questions/64768969/r-shiny-creating-factor-variables-and-defining-levels
   fitglm <- eventReactive(input$run_model, {
     Train <- train()
     
@@ -269,19 +276,19 @@ output$tbl2 <- renderDataTable(head(thedata2(), 7))
     }
   })
   
-  # glm summary
+# glm summary
   output$glmsummary <- renderPrint({
     summary(fitglm())
   })
   
   
-  # fit classification tree
+# fit classification tree
   treefit <- eventReactive(input$run_model, {
     Train <- train()
     
     newdata <- thedata2()
     
-    if (input$preprocessMe == 1) {
+    if (input$preprocessMe_C == 1) {
       treefit <- train(STATUS ~ ., data = newdata, method = "rpart", 
                        preProcess = c("center", "scale"),
                        trControl = trainControl(method = "cv", number = input$cross))
@@ -292,7 +299,7 @@ output$tbl2 <- renderDataTable(head(thedata2(), 7))
   })
   
   
-  # classification tree summary
+# classification tree summary
   output$treeplot <- renderPlot({
     treefit <- treefit()
     
@@ -302,7 +309,7 @@ output$tbl2 <- renderDataTable(head(thedata2(), 7))
   
   
   
-  # fit random forest model
+# fit random forest model
   fitrf <- eventReactive(input$run_model, {
     Train <- train()
     
@@ -316,7 +323,7 @@ output$tbl2 <- renderDataTable(head(thedata2(), 7))
   })
   
   
-  # random forest summary
+# random forest summary
   output$rfplot <- renderPlot({
     varimport <- varImp(fitrf())
     plot(varimport)

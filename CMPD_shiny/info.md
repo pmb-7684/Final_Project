@@ -11,9 +11,6 @@ The GLM consists of three elements:
 2. A linear predictor $\eta =X\beta$, and
 3. A link function such that $E(Y\mid X)=\mu =g^{-1}(\eta )$.
 
-When $a \ne 0$, there are two solutions to $(ax^2 + bx + c = 0)$ and they are 
-$$ x = {-b \pm \sqrt{b^2-4ac} \over 2a} $$
-
 This model is suitable where the outcome variable is binary. This is the case for this project.  We are using predictor variables to predict if STATUS (of the crime) is Open or Closed.  This model can be used where outcomes are for categorical variables, count data, and continuous variables skewed.
 
 
