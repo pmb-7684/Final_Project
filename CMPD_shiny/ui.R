@@ -17,16 +17,21 @@ library(DT)
 library(shinyWidgets)
 library(caret)
 library(randomForest)
+library(rpart)              #building decision tree model
+library(rattle)             #visualize the tree
+library(rpart.plot)
+library(RColorBrewer)
 
 df <- read_csv("df2022.csv")
 
-NIBRS1     <- df %>% select(NIBRS) %>% distinct() %>% pull()
-division1  <- df %>% select(DIVISION) %>% distinct() %>% pull()
-location1  <- df %>% select(LOCATION) %>% distinct() %>% pull()
-Month1     <- df %>% select(MONTH) %>% distinct() %>% pull()
-NPA1       <- df %>% select(NPA) %>% distinct() %>% pull()
-Type1       <- df %>% select(PLACE_TYPE) %>% distinct() %>% pull()
-Detail1       <- df %>% select(PLACE_DETAIL) %>% distinct() %>% pull()
+
+NIBRS1     <- df %>% dplyr::select(NIBRS) %>% distinct() %>% pull()
+division1  <- df %>% dplyr::select(DIVISION) %>% distinct() %>% pull()
+location1  <- df %>% dplyr::select(LOCATION) %>% distinct() %>% pull()
+Month1     <- df %>% dplyr::select(MONTH) %>% distinct() %>% pull()
+NPA1       <- df %>% dplyr::select(NPA) %>% distinct() %>% pull()
+Type1      <- df %>% dplyr::select(PLACE_TYPE) %>% distinct() %>% pull()
+Detail1    <- df %>% dplyr::select(PLACE_DETAIL) %>% distinct() %>% pull()
 not_sel    <- "Not Selected"
 
 
@@ -137,114 +142,125 @@ explore_page <- tabPanel(
 
 #Modeling Tab
 model_page <- tabPanel("Modeling", icon = icon("laptop"), titlePanel("Modeling Data"),
-                       sidebarLayout(
-                        sidebarPanel(title = "Inputs",
-                        strong("Fitting Models"),br(),
-                        ("Select the proportion, center & scale, and predictor variables for each model - GLM,                             Classification tree, and Random Forest."),
-                        br(),
-                        #GLM
-                        #Get proportions
-                        br(),strong("Generalized LM Modeling"),br(),
-                        selectInput(inputId = "n_prop",
-                        label = "Choose Partition Proportion:",
-                        choices = c(0.65, 0.70, 0.75, 0.80),
-                        selected = .75),
-                        #Get Preprocess
-                        checkboxInput("preprocessMe", 
-                                       "PreProcess with center & scale?", 
-                                       value = TRUE),
-                        #Get Predictors
-                        uiOutput("colPredict"),
-                        div(style="text-align:left","Select Predictors:"),
-                        textOutput("selectedTextp"),
-                        tags$hr(style="border-color: black;"),
-
-                        # Classification
-                        #Get proportions
-                        strong("Classification Tree Modeling"),br(),
-                        selectInput(inputId = "n_prop_C",
-                                        label = "Choose Partition Proportion:",
-                                        choices = c(0.65, 0.70, 0.75, 0.80),
-                                        selected = .75),
-                        #Get Preprocess
-                        checkboxInput("preprocessMe_C", 
-                                       "PreProcess with center & scale?", 
-                                       value = TRUE),
-                        #Get Predictors
-                        uiOutput("colPredict_C"),
-                        div(style="text-align:left","Select Predictors:"),
-                        textOutput("selectedTextp_C"),
-                        tags$hr(style="border-color: black;"),
-                         
-                        # Random Forest
-                        #Get proportions
-                        strong("Classification Tree Modeling"),br(),
-                        selectInput(inputId = "n_prop_R",
-                                     label = "Choose Partition Proportion:",
-                                     choices = c(0.65, 0.70, 0.75, 0.80),
-                                     selected = .75),
-                        #Get Preprocess
-                        checkboxInput("preprocessMe_R", 
-                                       "PreProcess with center & scale?", 
-                                       value = TRUE),
-                        #Get Predictors
-                        uiOutput("colPredict_R"),
-                        div(style="text-align:left","Select Predictors:"),
-                        textOutput("selectedTextp_R"),
-                        br(),
-                        actionButton("run_model", "Run Models", icon = icon("play")),
-                         
-                        hr(style = "border-top: 1px solid #000000;"),
-                         
-                        #Create predictions
-                        strong("Prediction"),br(),
-                        ("Select predictor variables for the prediction.  Once complete, press Run Prediction and select the Prediction tab to view the results"),
-                        selectInput("pickmodel", 
-                                     "Choose a model:", 
-                                     choices = c("GLM (Generalized LM)" = "glm", 
-                                                 "Classification Tree" = "tree", 
-                                                 "Random Forest" = "rf")),
-                         selectInput("Division_ID", 
-                                     "Choose Division:", 
-                                     division1, multiple = FALSE, selected = "07"),
-                         selectInput("NPA", 
-                                     "Choose NPA:", 
-                                     NPA1, multiple = FALSE, selected = "371"),
-                         selectInput("Location", 
-                                     "Choose Location:", 
-                                     location1, multiple = FALSE, selected = "Indoors"),
-                         selectInput("Type", 
-                                     "Choose Type:", 
-                                     Type1, multiple = FALSE, selected = "Residental"),
-                         selectInput("Detail", 
-                                     "Choose Detail:", 
-                                     Detail1, multiple = FALSE, selected = "Apartment/Duplex"),
-                         selectInput("NIBRS", 
-                                     "Choose Crime:", 
-                                     NIBRS1, multiple = FALSE, selected = "All Other Offenses"),
-                         selectInput("Month", 
-                                     "Choose Summer Month:", 
-                                     Month1, multiple = FALSE, selected = "08"),
-                         actionButton("run_predict","Run Prediction", icon = icon("play"))
-                              
-                       ),
-                       mainPanel(
-                         tabsetPanel(
-                           tabPanel("Modeling Info", icon = icon("info"),
-                                    column(10,includeMarkdown("info.md")),
-                                    DTOutput("tbl2"),
-                                    ),
-
-                           tabPanel("Modeling Fitting",icon = icon("table"),
-                                    #plotOutput("treeplot"),
-                                    #verbatimTextOutput("glmsummary"),
-                                    plotOutput("rfplot"),
-                                    ), 
-                      
-                           tabPanel("Prediction", icon = icon("list-alt"))
+             sidebarLayout(
+               sidebarPanel(title = "Inputs",
+              strong("Fitting Models"),br(),
+              ("Select the proportion, center & scale, and predictor variables for each model - GLM,                             Classification tree, and Random Forest."),
+              br(),
+              #GLM
+              #Get proportions
+              br(),strong("Generalized LM Modeling"),br(),
+              selectInput(inputId = "n_prop",
+                          label = "Choose Partition Proportion:",
+                          choices = c(.65, .70, .75, .80),
+                          selected = .75),
+              #Get Preprocess
+              checkboxInput("preprocessMe", 
+                            "PreProcess with center & scale?", 
+                            value = TRUE),
+              #Get CV
+              selectInput(inputId = "cross",
+                          label = "Number CV:",
+                          choices = c(5, 10, 15, 20),
+                          selected = 5),
+              #Get Predictors
+              uiOutput("colPredict"),
+              div(style="text-align:left","Select Predictors:"),
+              textOutput("selectedTextp"),
+              tags$hr(style="border-color: black;"),
+              
+              
+              # Classification
+              #Get proportions
+              strong("Classification Tree Modeling"),br(),
+              selectInput(inputId = "n_prop_C",
+                          label = "Choose Partition Proportion:",
+                          choices = c(.65, .70, .75, .80),
+                          selected = .75),
+              #Get Preprocess
+              checkboxInput("preprocessMe_C", 
+                            "PreProcess with center & scale?", 
+                            value = TRUE),
+              #Get CV
+              selectInput(inputId = "cross_C",
+                          label = "Number CV:",
+                          choices = c(5, 10, 15, 20),
+                          selected = 5),
+              #Get Predictors
+              uiOutput("colPredict_C"),
+              div(style="text-align:left","Select Predictors:"),
+              textOutput("selectedTextp_C"),
+              tags$hr(style="border-color: black;"),
+              
+              # Random Forest
+              #Get proportions
+              strong("Random Forest Modeling"),br(),
+              selectInput(inputId = "n_prop_R",
+                          label = "Choose Partition Proportion:",
+                          choices = c(.65, .70, .75, .80),
+                          selected = 0.75),
+              #Get CV
+              selectInput(inputId = "cross_R",
+                          label = "Number CV:",
+                          choices = c(5, 10, 15, 20),
+                          selected = 5),
+              #Get Predictors
+              uiOutput("colPredict_R"),
+              div(style="text-align:left","Select Predictors:"),
+              textOutput("selectedTextp_R"),
+              br(),
+              actionButton("run_model", "Run Models", icon = icon("play")),
+              
+              hr(style = "border-top: 1px solid #000000;"),
+              
+              #Create predictions
+              strong("Prediction"),br(),
+              ("Select predictor variables for the prediction.  Once complete, press Run Prediction and select the Prediction tab to view the results"),
+              selectInput("pickmodel", 
+                          "Choose a model:", 
+                          choices = c("GLM (Generalized LM)" = "glm", 
+                                      "Classification Tree" = "tree", 
+                                      "Random Forest" = "rf")),
+              selectInput("Division_ID", 
+                          "Choose Division:", 
+                          division1, multiple = FALSE, selected = "07"),
+              selectInput("NPA", 
+                          "Choose NPA:", 
+                          NPA1, multiple = FALSE, selected = "371"),
+              selectInput("Location", 
+                          "Choose Location:", 
+                          location1, multiple = FALSE, selected = "Indoors"),
+              selectInput("Type", 
+                          "Choose Type:", 
+                          Type1, multiple = FALSE, selected = "Residental"),
+              selectInput("Detail", 
+                          "Choose Detail:", 
+                          Detail1, multiple = FALSE, selected = "Apartment/Duplex"),
+              selectInput("NIBRS", 
+                          "Choose Crime:", 
+                          NIBRS1, multiple = FALSE, selected = "All Other Offenses"),
+              selectInput("Month", 
+                          "Choose Summer Month:", 
+                          Month1, multiple = FALSE, selected = "08"),
+              actionButton("run_predict","Run Prediction", icon = icon("play"))
+              
+ ),
+ mainPanel(
+   tabsetPanel(
+     tabPanel("Modeling Info", icon = icon("info"),
+              column(10,includeMarkdown("info.md")),
+              DTOutput("tbl2"),
+     ),
+     tabPanel("Modeling Fitting",icon = icon("table"),
+              #plotOutput("treeplot"),
+              #verbatimTextOutput("glmsummary"),
+              plotOutput("rfplot"),
+     ), 
+     
+     tabPanel("Prediction", icon = icon("list-alt"))
    )
-  )
  )
+)
 )
 
 
@@ -253,21 +269,29 @@ model_page <- tabPanel("Modeling", icon = icon("laptop"), titlePanel("Modeling D
 # Data Tab
 data_page <- tabPanel(
   title = "Data",  icon = icon("table"),
-  fluidPage(titlePanel("Data for Download"), 
-    fluidRow(
+  titlePanel("Data"), 
+    sidebarLayout(
+      sidebarPanel(
+        title = "Inputs",
     selectInput("MonthGet", label = "Choose Summer Month(s)", Month1, multiple = TRUE, selected = Month1),
     selectInput("DivisionGet", label = "Choose Division(s)", division1, multiple = TRUE, selected = division1),
     selectInput("NIBRSGet", label = "Choose Crimes (NIBRS)", NIBRS1, multiple = TRUE, selected = NIBRS1),
     selectInput("LocationGet", label = "Choose Location(s)", location1, multiple = TRUE, selected = location1),
+    selectInput("TypeGet", label = "Choose Type(s)", Type1, multiple = TRUE, selected = Type1),
+    selectInput("DetailGet", label = "Choose Detail(s)", Detail1, multiple = TRUE, selected = Detail1),
     #Get Columns
     uiOutput("colControls_D"),
     div(style="text-align:left","Select Columns:"),
     textOutput("selectedTextc_D"),
     downloadButton("download1","Download entire Table  as csv"),
-    mainPanel(DT::dataTableOutput("cmpd_dto"))
+      ),
+    mainPanel(
+      tabsetPanel(
+        tabPanel(DT::dataTableOutput("cmpd_dto"))
         )
-  )
-)
+    )
+  ))
+
 
 
 

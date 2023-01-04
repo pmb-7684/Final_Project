@@ -1,5 +1,5 @@
 ---
-title: "ShinyApp for Covid19"
+title: "ShinyApp for CMPD"
 author: "Paula Bailey"
 date: "2022-11-27"
 output: html_document
@@ -43,11 +43,16 @@ df <- df %>% dplyr::select(-CITY, -STATE, -ZIP, -X, -Y, -X_COORD_PUBLIC, -Y_COOR
 
 #if not OPEN, then we are going to change everyone to CLOSED. we can use mutate
 ```{r}
-STATUS <- ifelse(df$CLEARANCE_STATUS %in% c('Open','OPEN'), "Open", "Closed")
+STATUS1 <- ifelse(df$CLEARANCE_STATUS %in% c('Open','OPEN'), "Open", "Closed")
 ```
 
 ```{r}
-df2 <- mutate(df,STATUS)
+df2 <- mutate(df,STATUS1)
+```
+
+```{r}
+df2 = df2 %>% mutate(STATUS = case_when(`STATUS1` == 'Closed'~ 0,
+                                             `STATUS1` == 'Open'~ 1))
 ```
 
 #if closed, how many days does it take
@@ -61,7 +66,7 @@ df2$month <- format(as.Date(df2$DATE_REPORTED, format="%Y/%m/%d"),"%m")
 
 
 ```{r}
-df2 <- df2 %>% dplyr::select(-DATE_REPORTED, -CLEARANCE_DATE, - CLEARANCE_STATUS)
+df2 <- df2 %>% dplyr::select(-DATE_REPORTED, -CLEARANCE_DATE, - CLEARANCE_STATUS, -STATUS1)
 ```
 
 ```{r}
@@ -216,9 +221,213 @@ fwrite(df2022R2, "df2022.csv")
 df <- read.csv("df2022.csv")
 head(df)
 ```
+---------------------------------------------------------------------------------------------------------------
+12/31/2022
+
+```{r}
+df <- read.csv("df2022.csv")
+head(df)
+```
+interesting, the data loaded does not retain factors.
+```{r}
+str(df)
+```
 
 
 
+We need to get rid of NPA (not important); update YEAR, DIVISION_ID and MONTH to char
+
+fix type
+```{r}
+df2 <- df%>% mutate(YEAR = as.character(YEAR), DIVISION_ID = as.character(DIVISION_ID), MONTH =as.character(MONTH))%>% dplyr::select(-NPA)
+```
+
+```{r}
+df2 <- df2%>%mutate(YEAR = as.factor(YEAR), DIVISION_ID = as.factor(DIVISION_ID), DIVISION = as.factor(DIVISION), LOCATION = as.factor(LOCATION),PLACE_TYPE = as.factor(PLACE_TYPE), PLACE_DETAIL = as.factor(PLACE_DETAIL), NIBRS = as.factor(NIBRS),STATUS = as.factor(STATUS), MONTH = as.factor(MONTH))
+```
+
+```{r}
+summary(df2)
+```
+
+```{r}
+str(df2)
+```
+
+confirm everything is factor (above)
+```{r}
+  #create train and test for classification selected data
+
+    trainIndex_C <- createDataPartition(df2$STATUS, p = .75, list = FALSE)
+
+    train_C <- df2[trainIndex_C,]
+
+    test_C  <- df2[-trainIndex_C,]
+
+```
+mistake to fix - use - rather than !; data is now split correctly
+
+```{r}
+# fit classification tree
+  newdata <- train_C
+
+  treefit <- train(STATUS ~ ., data = newdata, method = "rpart", 
+                       preProcess = c("center", "scale"),
+                       trControl = trainControl(method = "cv", number = 5))
+
+
+```  
+
+```{r}  
+# classification tree summary
+
+    plot(treefit$finalModel, main = "Classification Tree")
+    text(treefit$finalModel, pretty = 0, cex = 0.6)
+
+```
+
+okay, so this works;  try it with OPEN and CLOSE as the response variables
+
+```{r}
+df_ <- read.csv("df2022.csv")
+head(df_)
+```
+
+
+```{r}
+df_ <- df_ %>%mutate(YEAR = as.factor(as.character(YEAR)), DIVISION_ID = as.factor(as.character(DIVISION_ID)), DIVISION = as.factor(DIVISION), LOCATION = as.factor(LOCATION),PLACE_TYPE = as.factor(PLACE_TYPE), PLACE_DETAIL = as.factor(PLACE_DETAIL), NIBRS = as.factor(NIBRS),STATUS = as.factor(STATUS), MONTH = as.factor(as.character(MONTH))) %>% dplyr::select(-NPA)
+```
+
+```{r}
+str(df_)
+```
+
+confirm everything is factor (above)
+```{r}
+  #create train and test for classification selected data
+
+    trainIndex_C <- createDataPartition(df_$STATUS, p = 0.75, list = FALSE)
+
+    train_C <- df_[trainIndex_C,]
+
+    test_C  <- df_[-trainIndex_C,]
+
+```
+mistake to fix - use - rather than !; data is now split correctly
+
+```{r}
+# fit classification tree
+  newdata <- train_C
+
+  treefit <- train(STATUS ~ ., data = newdata, method = "rpart", 
+                       preProcess = c("center", "scale"),
+                       trControl = trainControl(method = "cv", number = 5))
+
+
+```  
+
+```{r}  
+# classification tree summary
+
+    plot(treefit$finalModel, main = "Classification Tree")
+    text(treefit$finalModel, pretty = 0, cex = 0.6)
+
+```
+
+############# RF
+
+```{r}
+df <- read.csv("df2022_.csv")
+head(df)
+```
+```{r}
+str(df)
+```
+
+```{r}
+df <- df %>%mutate(YEAR = as.factor(as.character(YEAR)), DIVISION_ID = as.factor(as.character(DIVISION_ID)), DIVISION = as.factor(DIVISION), LOCATION = as.factor(LOCATION),PLACE_TYPE = as.factor(PLACE_TYPE), PLACE_DETAIL = as.factor(PLACE_DETAIL), NIBRS = as.factor(NIBRS),STATUS = as.factor(STATUS), MONTH = as.factor(as.character(MONTH))) %>% dplyr::select(-NPA)
+```
+
+```{r}
+str(df)
+```
+
+
+```{r}
+summary(df)
+```
+
+```{r}
+  #create train and test for classification selected data
+
+    trainIndex_R <- createDataPartition(df$STATUS, p = 0.75, list = FALSE)
+
+    train_R <- df[trainIndex_R,]
+
+    test_R  <- df[-trainIndex_R,]
+
+```
+
+```{r}
+  newdata_R <- test_R
+  
+  
+  fitrf <- train(STATUS ~ ., data = newdata_R, method = "rf", 
+                 trControl = trainControl(method = "cv", number = 5),
+                 tuneGrid = expand.grid(mtry = c(1:round(sqrt(ncol(newdata_R)-1)))))
+```
+
+```{r}
+  fitrf2 <- randomForest(STATUS ~ ., data = newdata_R, importance = TRUE)
+```
+
+```{r}
+fitrf
+```
+
+
+```{r}
+  varimport <- varImp(fitrf)
+  plot(varimport)
+```
 
 
 
+```{r}
+fitrf2
+```
+
+```{r}
+importance(fitrf2)
+```
+
+
+```{r}
+varImpPlot(fitrf2)
+```
+
+using one-hot
+```{r}
+#define one-hot encoding function
+dummy <- dummyVars(" ~ .", data=df)
+
+#perform one-hot encoding on data frame
+final_df <- data.frame(predict(dummy, newdata=df))
+```
+
+```{r}
+head(final_df)
+```
+
+using one-hot
+```{r}
+#define one-hot encoding function
+dummy <- dummyVars(" ~ .", data=df)
+
+#perform one-hot encoding on data frame
+final_df <- data.frame(predict(dummy, newdata=df))
+```
+
+```{r}
+head(final_df)
+```
