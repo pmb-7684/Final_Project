@@ -15,16 +15,23 @@ Final Project - ST 558
 
 
 • A list of packages needed to run the app.
-
+``` library(shiny)
+    library(shinydashboard)
+    library(shinythemes)
+    library(data.table)
+    library(ggplot2)
+    library(tidyverse)
+    library(DT)
+    library(shinyWidgets)
+    library(caret)
+    library(randomForest)
+    library(rpart)
+```
 
 
 • A line of code that would install all the packages used.
+install.packages(c("shiny", "shinydashboard", "shinythemes", "data.table", "tidyverse", "DT", "shinyWidgets", "caret", "randomForest", "rpart"))
 
-``` library(shiny)
-    library()
-    library(tidyverse)
-    library(data.table)
-```
 
 
 
