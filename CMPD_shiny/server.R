@@ -20,14 +20,13 @@ library(rpart)              #building decision tree model
 library(rattle)             #visualize the tree
 library(rpart.plot)
 library(RColorBrewer)
-#library(glmnet)             #glm modeling - delete if not used
+
 
 
 df <- read_csv("df2022.csv")   #1/0
-df2 <- df %>% dplyr::select(-DIVISION_ID, -NPA)
 
 df1 <- read_csv("df2022_.csv") #open/closed
-#df3 <- df1 %>% dplyr::select(-DIVISION_ID, -NPA)
+
 
 NIBRS1     <- df %>% dplyr::select(NIBRS) %>% distinct() %>% pull()
 division1  <- df %>% dplyr::select(DIVISION) %>% distinct() %>% pull()
