@@ -142,8 +142,8 @@ explore_page <- tabPanel(
 
 #Modeling Tab
 model_page <- tabPanel("Modeling", icon = icon("laptop"), titlePanel("Modeling Data"),
-             sidebarLayout(
-               sidebarPanel(title = "Inputs",
+sidebarLayout(
+ sidebarPanel(title = "Inputs",
               strong("Fitting Models"),br(),
               ("Select the proportion, center & scale, and predictor variables for each model - GLM,                             Classification tree, and Random Forest."),
               br(),
@@ -224,9 +224,6 @@ model_page <- tabPanel("Modeling", icon = icon("laptop"), titlePanel("Modeling D
               selectInput("Division_ID", 
                           "Choose Division:", 
                           division1, multiple = FALSE, selected = "07"),
-              selectInput("NPA", 
-                          "Choose NPA:", 
-                          NPA1, multiple = FALSE, selected = "371"),
               selectInput("Location", 
                           "Choose Location:", 
                           location1, multiple = FALSE, selected = "Indoors"),
@@ -248,20 +245,29 @@ model_page <- tabPanel("Modeling", icon = icon("laptop"), titlePanel("Modeling D
  mainPanel(
    tabsetPanel(
      tabPanel("Modeling Info", icon = icon("info"),
-              column(10,includeMarkdown("info.md")),
-              DTOutput("tbl2"),
+              column(10,includeMarkdown("info.md"))
      ),
-     tabPanel("Modeling Fitting",icon = icon("table"),
-              #plotOutput("treeplot"),
-              #verbatimTextOutput("glmsummary"),
-              plotOutput("rfplot"),
+     tabPanel("Model - GLM",icon = icon("table"),
+              DTOutput("tbl3"),
+              verbatimTextOutput("glmsummary"),
+
      ), 
      
-     tabPanel("Prediction", icon = icon("list-alt"))
+     tabPanel("Model - Classification", icon = icon("list-alt"),
+              DTOutput("tbl4"),
+              plotOutput("treeplot"),
+              ),
+     tabPanel("Model - RF", icon = icon("list-alt"),
+              DTOutput("tbl2"),
+              plotOutput("rfplot"),
+              ),
+     tabPanel("Prediction", icon = icon("list-alt"),
+              textOutput("predResults")
    )
  )
 )
-)
+))
+
 
 
 
@@ -300,12 +306,13 @@ data_page <- tabPanel(
 
 ui <- navbarPage(
   setBackgroundColor("LightYellow"),
-  title = "Data Analyser",
+  #title = "",
   theme = shinytheme('united'),
   dashboard_page,
   about_page,
   explore_page,
   model_page,
+  #predict_page,
   data_page
 )
 
