@@ -28,13 +28,15 @@ This tree based model partitions a data set of observations into smaller and sma
 The pro for using classification trees:
 
 1. Ease of use, easy to explain and visualize.
-2. Does not require data normalization
+2. Does not require data normalization.
+3. Works with both numerical and categorical data.
 
 The con for using classification trees:
 
-1. There lack of predictive accuracy. By combining this method with other algorithms the accuracy can be improved.  However,  in general the predictive accuracy is limited.
+1. There lack of predictive accuracy. By combining this method with other algorithms the accuracy can be improved.  However, in general the predictive accuracy is limited.
 2. Classification trees can have high variance.
-3. Calculations can become complex which reuires more processing time.
+3. Calculations can become complex which requires more processing time.
+4. Model overfitting.
 
 
 
