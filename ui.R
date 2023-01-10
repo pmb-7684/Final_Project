@@ -6,25 +6,25 @@
 #
 #    
 
-library(shiny)
-library(shinydashboard)
-library(shinythemes)
-#library(data.table) # fast and easy data manipulation for large datasets
-#library(ggplot2) donot need; part of tidyverse
-library(tidyverse)
-library(DT)
-library(shinyWidgets)
-library(caret)
-library(randomForest)
-library(rpart)              #building decision tree model
-library(rattle)             #visualize the tree
-library(rpart.plot)
-library(RColorBrewer)
-#library(glmnet)             #glm modeling - delete if not used
-
-df <- read_csv("df2022.csv")
+library(shiny)                  # build rich and productive interactive web apps in R
+library(shinydashboard)         # create shiny dashboards
+library(shinythemes)            # themes for shiny
+library(data.table)             # fast and easy data manipulation for large datasets
+library(tidyverse)              # collection of R packages designed for data science
+library(DT)                     # R interface to the JavaScript library DataTables
+library(shinyWidgets)           # custom widgets and components to enhance shiny applications
+library(caret)                  # Streamline functions training and plotting classification & regression models
+library(randomForest)           # Classification & regression based on decision trees
+library(rpart)                  # Building decision tree model
+library(rattle)                 # visualize the tree
+library(rpart.plot)             # Recursive Partitioning and Regression Trees
+library(RColorBrewer)           # Provides color schemes for maps (and other graphics)
 
 
+df <- read_csv("df2022.csv")    #1/0 for STATUS               once complete model; one retain one dataset
+df1 <- read_csv("df2022_.csv")  #open/closed for STATUS
+
+# creates distinct elements for each variable; used in selection process
 NIBRS1     <- df %>% dplyr::select(NIBRS) %>% distinct() %>% pull()
 division1  <- df %>% dplyr::select(DIVISION) %>% distinct() %>% pull()
 location1  <- df %>% dplyr::select(LOCATION) %>% distinct() %>% pull()
@@ -253,17 +253,20 @@ sidebarLayout(
 
      ), 
      
-     tabPanel("Model - Classification", icon = icon("list-alt"),
+     tabPanel("Model - Classification", icon = icon("table"),
               DTOutput("tbl4"),
               plotOutput("treeplot"),
+              #textOutput("accuracy"),
               ),
-     tabPanel("Model - RF", icon = icon("list-alt"),
+     tabPanel("Model - RF", icon = icon("table"),
               DTOutput("tbl2"),
               plotOutput("rfplot"),
+              #textOutput("accuracy"),
               ),
      tabPanel("Prediction", icon = icon("list-alt"),
-              textOutput("predResults")
-   )
+              textOutput("predResults"),
+              #textOutput("accuracy"),
+             )
  )
 )
 ))

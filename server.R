@@ -6,29 +6,24 @@
 #
 #    
 
-library(shiny)
-library(shinydashboard)
-library(shinythemes)
-#library(data.table) # fast and easy data manipulation for large datasets
-#library(ggplot2) donot need; part of tidyverse
-library(tidyverse)
-library(DT)
-library(shinyWidgets)
-library(caret)
-library(randomForest)
-library(rpart)              #building decision tree model
-library(rattle)             #visualize the tree
-library(rpart.plot)
-library(RColorBrewer)
-#library(glmnet)             #glm modeling - delete if not used
+library(shiny)                  # build rich and productive interactive web apps in R
+library(shinydashboard)         # create shiny dashboards
+library(shinythemes)            # themes for shiny
+library(data.table)             # fast and easy data manipulation for large datasets
+library(tidyverse)              # collection of R packages designed for data science
+library(DT)                     # R interface to the JavaScript library DataTables
+library(shinyWidgets)           # custom widgets and components to enhance shiny applications
+library(caret)                  # Streamline functions training and plotting classification & regression models
+library(randomForest)           # Classification & regression based on decision trees
+library(rpart)                  # Building decision tree model
+library(rattle)                 # visualize the tree
+library(rpart.plot)             # Recursive Partitioning and Regression Trees
+library(RColorBrewer)           # Provides color schemes for maps (and other graphics)
 
 
-df <- read_csv("df2022.csv")   #1/0
-df2 <- df %>% dplyr::select(-DIVISION_ID, -NPA)
+df <- read_csv("df2022.csv")    #1/0 for STATUS               once complete model; one retain one dataset
+df1 <- read_csv("df2022_.csv")  #open/closed for STATUS
 
-
-df1 <- read_csv("df2022_.csv") #open/closed
-#df3 <- df1 %>% dplyr::select(-DIVISION_ID, -NPA)
 
 NIBRS1     <- df %>% dplyr::select(NIBRS) %>% distinct() %>% pull()
 division1  <- df %>% dplyr::select(DIVISION) %>% distinct() %>% pull()
@@ -297,9 +292,9 @@ data_model_Group <- eventReactive(input$run_model1, {
 #############################################################################################################
 # Predictor selection and creating model
 # RANDOM FOREST          creates thedata4()
-#   
+# For random forest and classification, we should not need to encode; it should be able to handle as is.
 
-#Slight cleanup to get predictions & complete basic factoring
+#Slight cleanup to get predictions & complete basic factoring - Attempt 1
 data_model_RS <- eventReactive(input$run_model, {
   df4 <- df1 %>% dplyr::select(-DIVISION_ID, -NPA)
   
@@ -320,6 +315,26 @@ data_model_RS <- eventReactive(input$run_model, {
 })
 
 
+#Slight cleanup to get predictions & complete basic factoring - Attempt 2
+# https://www.r-bloggers.com/2017/11/predict-customer-churn-logistic-regression-decision-tree-and-random-forest/
+data_model_Fac <- eventReactive(input$run_model, {
+  df4 <- df1 %>% dplyr::select(-DIVISION_ID, -NPA)
+  
+  df4$MONTH <- as.factor(df4$MONTH)
+  df4$DIVISION <- as.factor(df4$DIVISION)
+  df4$LOCATION <- as.factor(df4$LOCATION)
+  df4$PLACE_TYPE <- as.factor(df4$PLACE_TYPE)
+  df4$PLACE_DETAIL <- as.factor(df4$PLACE_DETAIL)
+  df4$NIBRS <- as.factor(df4$NIBRS)
+  
+  df4$YEAR <- as.factor(df4$YEAR)
+  df4$STATUS <- as.factor(df4$STATUS)
+  
+  data_model_Fac <- df4 
+})
+
+
+
 #get predictors for RF
 output$colPredict_R <- renderUI({
   
@@ -336,7 +351,7 @@ thedata4 <- eventReactive(input$run_model, {
     response_R <- list(c("STATUS"))
     selected_R <- unlist(append(txtp_R(), response_R))
     
-    thedata4 <- data_model_RS() %>% dplyr::select({paste0(selected_R)}) 
+    thedata4 <- data_model_Fac() %>% dplyr::select({paste0(selected_R)})   #HERE - chg dataset for RF prior split
 })
 
 
@@ -361,26 +376,28 @@ test_R  <- eventReactive(input$run_model,{
   
 })
 
-#applies One Hot Encoding by encoding the categorical independent variables for TRAINING
-
-trainX <- eventReactive(input$run_model, {
-  
-      trainfactors <- model.matrix(train_R()$STATUS ~ train_R()$MONTH+ train_R()$DIVISION+ train_R()$LOCATION +
-                                   train_R()$PLACE_TYPE+ train_R()$PLACE_DETAIL+ train_R()$NIBRS)[,-1]
-      
-  trainX <- as.matrix(data.frame(trainfactors, train_R()$YEAR)) 
-})
-
-
-#applies One Hot Encoding by encoding the categorical independent variables for TEST
+# Below attempt to use One hot encoding
+#applies One Hot Encoding by encoding the categorical independent variables for TRAINING - not used;
 #https://www.youtube.com/watch?v=qFeeldwPiNE
-testX <- eventReactive(input$run_model, {
+
+#trainX <- eventReactive(input$run_model, {
   
-  trainfactors <- model.matrix(train_R()$STATUS ~ train_R()$MONTH+ train_R()$DIVISION+ train_R()$LOCATION +
-                                 train_R()$PLACE_TYPE+ train_R()$PLACE_DETAIL+ train_R()$NIBRS)[,-1]
+#      trainfactors <- model.matrix(train_R()$STATUS ~ train_R()$MONTH+ train_R()$DIVISION+ train_R()$LOCATION +
+#                                   train_R()$PLACE_TYPE+ train_R()$PLACE_DETAIL+ train_R()$NIBRS)[,-1]
+      
+#  trainX <- as.matrix(data.frame(trainfactors, train_R()$YEAR)) 
+#})
+
+
+#applies One Hot Encoding by encoding the categorical independent variables for TEST  - not used;
+#https://www.youtube.com/watch?v=qFeeldwPiNE
+#testX <- eventReactive(input$run_model, {
   
-  testX <- as.matrix(data.frame(testfactors, train_R()$YEAR)) 
-})
+#  trainfactors <- model.matrix(train_R()$STATUS ~ train_R()$MONTH+ train_R()$DIVISION+ train_R()$LOCATION +
+#                                 train_R()$PLACE_TYPE+ train_R()$PLACE_DETAIL+ train_R()$NIBRS)[,-1]
+  
+#  testX <- as.matrix(data.frame(testfactors, train_R()$YEAR)) 
+#})
 
 
 
@@ -393,13 +410,18 @@ fitrf <- eventReactive(input$run_model, {
   selected_R <- unlist(append(txtp_R(), response_R))
   
   newdata_R <- Train[, selected_R]
-  # newdata_R <- trainX()
+  # newdata_R <- trainX()   #used for One Hot method
   
-  fitrf <- train(train_R()$STATUS ~ ., data = newdata_R, method = "rf", 
-                 trControl = trainControl(method = "cv", number = input$cross_R),
-                 tuneGrid = expand.grid(mtry=sqrt(ncol(trainSet_rf))), 
+  #caret method
+  #fitrf <- train(train_R()$STATUS ~ ., data = newdata_R, method = "rf", 
+  #               trControl = trainControl(method = "cv", number = input$cross_R),
+  #               tuneGrid = expand.grid(mtry=sqrt(ncol(newdata_R))), 
                  #ntree = 300, mtry = 5
-                 )
+  #               )
+  
+  #non caret method
+  fitrf <- randomForest(STATUS ~., data = newdata_R)
+  
   })
 })
 
@@ -487,7 +509,7 @@ fitglm <- eventReactive(input$run_model, {
   
   if (input$preprocessMe == 1) {
     fitglm <- train(STATUS ~ ., data = newdata, method = "glm", family = "binomial", 
-                    preProcess = c("center", "scale"),
+                    #preProcess = c("center", "scale"),
                     trControl = trainControl(method = "cv", number = input$cross))
   } else {
     fitglm <- train(STATUS ~ ., data = newdata, method = "glm", family = "binomial", 
@@ -577,7 +599,7 @@ treefit <- eventReactive(input$run_model, {
     
     if (input$preprocessMe_C == 1) {
       treefit <- train(STATUS ~ ., data = newdata_C, method = "rpart", 
-                       preProcess = c("center", "scale"),
+                       #preProcess = c("center", "scale"),
                        trControl = trainControl(method = "cv", number = input$cross_C))
       
       #treefit <- rpart(STATUS ~ ., data = newdata_C, method = "class")
@@ -611,21 +633,21 @@ output$accuracy <- renderTable({
   treefit <- treefit()
   fitrf <- fitrf()
   
-  Aglm <- fitglm$results %>% dplyr::select(Accuracy)
+  Aglm  <- fitglm$results %>% dplyr::select(Accuracy)
   Atree <- treefit$results %>% filter(cp == treefit$bestTune$cp) %>% dplyr::select(Accuracy)
-  Arf <- fitrf$results %>% filter(mtry == fitrf$bestTune$mtry) %>% dplyr::select(Accuracy)
+  Arf   <- fitrf$results %>% filter(mtry == fitrf$bestTune$mtry) %>% dplyr::select(Accuracy)
   
-  accuracyTab <- cbind(Aglm, Atree, Arf)
-  colnames(accuracyTab) <- list("GLM", "Classification Tree", "Random Forest") 
+  accuracy           <- cbind(Aglm, Atree, Arf)
+  colnames(accuracy) <- list("GLM", "Classification Tree", "Random Forest") 
   
-  accuracyTab
+  accuracy
 })
 
 
 
 
 #############################################################################################################
-# PREDICTION
+# PREDICTION TAB
 #
 
 output$predResults <- eventReactive(input$run_predict, {
@@ -639,6 +661,31 @@ output$predResults <- eventReactive(input$run_predict, {
 #    output$predResults <-renderText({"Prediction - Underconstruction for Random Forest" })
 #}
 })
+
+
+#------- NOTES ----- complete once resolve modeling error
+
+# Get user predictions
+# varI <-eventReactive(input$run_predict,input$Division_ID)
+# varL <-eventReactive(input$run_predict,input$Location)
+# varT <-eventReactive(input$run_predict,input$Type)
+# varD <-eventReactive(input$run_predict,input$Detail)
+# varN <-eventReactive(input$run_predict,input$NIBRS)
+# varM <-eventReactive(input$run_predict,input$Month)
+
+
+# create data from predictions
+#selected_p <- unlist(append(varI,varL, varT, varD, varN, varM ))
+#newdata_p <- Test[, selected_p]
+
+#RF prediction
+#rfPredict     <-predict(fitrf, data=newdata_p) %>% as_tibble()
+#Random_Forest <- postResample(rfPredict(), obs = test_R$STATUS)
+
+#LM prediction
+#treePredict   <-predict(fittree, data=newdata_p %>% as_tibble()
+#Glm           <-postResample(treePredict(), obs = test()$STATUS)
+
 
 
 })
@@ -656,4 +703,5 @@ output$predResults <- eventReactive(input$run_predict, {
 # https://stackoverflow.com/questions/71132387/nested-tabsets-in-shiny
 # https://www.statology.org/one-hot-encoding-in-r/
 # https://www.youtube.com/watch?v=rxbgmluhp4o
-
+# https://www.r-bloggers.com/2017/01/random-forest-classification-of-mushrooms/
+# https://www.r-bloggers.com/2017/11/predict-customer-churn-logistic-regression-decision-tree-and-random-forest/
