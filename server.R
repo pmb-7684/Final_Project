@@ -9,8 +9,8 @@
 library(shiny)
 library(shinydashboard)
 library(shinythemes)
-library(data.table)
-library(ggplot2)
+#library(data.table) # fast and easy data manipulation for large datasets
+#library(ggplot2) donot need; part of tidyverse
 library(tidyverse)
 library(DT)
 library(shinyWidgets)
@@ -215,14 +215,13 @@ output$var1_summary_table <- renderTable({
   else if(var_1() == not_sel & var_2() != not_sel & fact_var() != not_sel){                   #23
         var1_summary_table <- table(thedata1()[[list[2]]], thedata1()[[list[3]]])
   }
-  
 })
 
 
 
 ###############################################################################################################
 # Data for all models - fact
-#  able to run in .rmd using both Open/Close and 0/1
+#  able to run in .rmd using both Open/Close and 0/1 - undercontruction, not used; may tested - still got error
 data_model_Group <- eventReactive(input$run_model1, {
   
   df7<- df1 %>% dplyr::select(-NPA, -DIVISION_ID)
@@ -305,12 +304,12 @@ data_model_RS <- eventReactive(input$run_model, {
   df4 <- df1 %>% dplyr::select(-DIVISION_ID, -NPA)
   
   #df4$YEAR <- as.factor(df4$YEAR)
-  df4$MONTH <- as.factor(df4$MONTH)
-  df4$DIVISION <- as.factor(df4$DIVISION)
-  df4$LOCATION <- as.factor(df4$LOCATION)
-  df4$PLACE_TYPE <- as.factor(df4$PLACE_TYPE)
-  df4$PLACE_DETAIL <- as.factor(df4$PLACE_DETAIL)
-  df4$NIBRS <- as.factor(df4$NIBRS)
+  df4$MONTH <- as.numeric(as.factor(df4$MONTH))
+  df4$DIVISION <- as.numeric(as.factor(df4$DIVISION))
+  df4$LOCATION <- as.numeric(as.factor(df4$LOCATION))
+  df4$PLACE_TYPE <- as.numeric(as.factor(df4$PLACE_TYPE))
+  df4$PLACE_DETAIL <- as.numeric(as.factor(df4$PLACE_DETAIL))
+  df4$NIBRS <- as.numeric(as.factor(df4$NIBRS))
   
   df4$YEAR <- as.factor(as.integer(df4$YEAR))
   
@@ -388,17 +387,19 @@ testX <- eventReactive(input$run_model, {
 # fit random forest model
 fitrf <- eventReactive(input$run_model, {
   withProgress(message = 'Modeling in progress. Please wait ...', {
-  #Train <- train_R()
+  Train <- train_R()
   
-  #response_R <- list(c("STATUS"))
-  #selected_R <- unlist(append(txtp_R(), response_R))
+  response_R <- list(c("STATUS"))
+  selected_R <- unlist(append(txtp_R(), response_R))
   
-  #newdata_R <- Train[, selected_R]
-   newdata_R <- trainX()
+  newdata_R <- Train[, selected_R]
+  # newdata_R <- trainX()
   
   fitrf <- train(train_R()$STATUS ~ ., data = newdata_R, method = "rf", 
                  trControl = trainControl(method = "cv", number = input$cross_R),
-                 tuneGrid = expand.grid(.mtry=ncol(trainSet_rf)/3))
+                 tuneGrid = expand.grid(mtry=sqrt(ncol(trainSet_rf))), 
+                 #ntree = 300, mtry = 5
+                 )
   })
 })
 
@@ -418,12 +419,12 @@ output$rfplot <- renderPlot({
 data_model <- eventReactive(input$run_model, {
   df4 <- df1 %>% dplyr::select(-DIVISION_ID, -NPA)
   #df4$YEAR <- as.factor(df4$YEAR)
-  df4$MONTH <- as.factor(df4$MONTH)
-  df4$DIVISION <- as.factor(df4$DIVISION)
-  df4$LOCATION <- as.factor(df4$LOCATION)
-  df4$PLACE_TYPE <- as.factor(df4$PLACE_TYPE)
-  df4$PLACE_DETAIL <- as.factor(df4$PLACE_DETAIL)
-  df4$NIBRS <- as.factor(df4$NIBRS)
+  df4$MONTH <- as.numeric(as.factor(df4$MONTH))
+  df4$DIVISION <- as.numeric(as.factor(df4$DIVISION))
+  df4$LOCATION <- as.numeric(as.factor(df4$LOCATION))
+  df4$PLACE_TYPE <- as.numeric(as.factor(df4$PLACE_TYPE))
+  df4$PLACE_DETAIL <- as.numeric(as.factor(df4$PLACE_DETAIL))
+  df4$NIBRS <- as.numeric(as.factor(df4$NIBRS))
   
   df4$YEAR <- as.factor(as.integer(df4$YEAR))
   
@@ -434,7 +435,7 @@ data_model <- eventReactive(input$run_model, {
   data_model <- df4 
 })
 
-#gets predictos for glm
+#gets predictors for glm
 output$colPredict <- renderUI({
   
   pickerInput(inputId="colsP", "Choose Predictors", choices = c("YEAR", "DIVISION", "LOCATION", "PLACE_TYPE","PLACE_DETAIL", "NIBRS","MONTH"), multiple = TRUE)
@@ -508,12 +509,12 @@ output$glmsummary <- renderPrint({
 data_model_C <- eventReactive(input$run_model, {
   df4 <- df1 %>% dplyr::select(-DIVISION_ID, -NPA)
 
-  df4$MONTH <- as.factor(df4$MONTH)
-  df4$DIVISION <- as.factor(df4$DIVISION)
-  df4$LOCATION <- as.factor(df4$LOCATION)
-  df4$PLACE_TYPE <- as.factor(df4$PLACE_TYPE)
-  df4$PLACE_DETAIL <- as.factor(df4$PLACE_DETAIL)
-  df4$NIBRS <- as.factor(df4$NIBRS)
+  df4$MONTH <- as.numeric(as.factor(df4$MONTH))
+  df4$DIVISION <- as.numeric(as.factor(df4$DIVISION))
+  df4$LOCATION <- as.numeric(as.factor(df4$LOCATION))
+  df4$PLACE_TYPE <- as.numeric(as.factor(df4$PLACE_TYPE))
+  df4$PLACE_DETAIL <- as.numeric(as.factor(df4$PLACE_DETAIL))
+  df4$NIBRS <- as.numeric(as.factor(df4$NIBRS))
   
   df4$YEAR <- as.factor(as.integer(df4$YEAR))
   

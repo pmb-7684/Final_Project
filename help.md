@@ -30,7 +30,7 @@ Note: If you decide to update the chart type, you must click `Run Analysis` to d
 
 **Creating Summary Tables**
 
-9.  Once satisfied with the data selection, Use the drop-down boxes to select Variable 1 - Summary,  Variable 2 - Summary,and Variable 3 - Summary.  You can select up to three variables.  Please select the variables in order - if you are selecting only one variable to analyze, please select from Variable 1 - Summary. Also if you are selecting two variables to analyze, please select from Variable 1 - Summary and Variable 2 - Summary; otherwise, an error will occur.
+9.  Once satisfied with the data selection, Use the drop-down boxes to select Variable 1 - Summary,  Variable 2 - Summary,and Variable 3 - Summary.  You can select up to three variables.  
 
 10.  Select the `Summary` Tab.
 

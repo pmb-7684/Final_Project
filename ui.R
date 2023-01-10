@@ -8,10 +8,9 @@
 
 library(shiny)
 library(shinydashboard)
-library(shiny)
 library(shinythemes)
-library(data.table)
-library(ggplot2)
+#library(data.table) # fast and easy data manipulation for large datasets
+#library(ggplot2) donot need; part of tidyverse
 library(tidyverse)
 library(DT)
 library(shinyWidgets)
@@ -21,6 +20,7 @@ library(rpart)              #building decision tree model
 library(rattle)             #visualize the tree
 library(rpart.plot)
 library(RColorBrewer)
+#library(glmnet)             #glm modeling - delete if not used
 
 df <- read_csv("df2022.csv")
 
