@@ -41,12 +41,10 @@ not_sel    <- "Not Selected"
 shinyServer(function(input, output, session) {
 
 
-#############################################################################################################
-# Tab DATA section 
-# https://community.rstudio.com/t/download-dataset-filtered-in-shiny-input/75770/2
-# https://stackoverflow.com/questions/42261496/selectinput-have-multiple-true-and-filter-based-off-that
-# this filter rows and allows user to download a csv for the new data
+################################################################################ DATA section
+ 
 
+# this filter rows and allows user to download a csv for the new data
 # column selection for DATA tab
 output$colControls_D <- renderUI({
     
@@ -102,8 +100,8 @@ output$download1 <- downloadHandler(
     }
 )  
 
-
-#Columns and rows for Data Exploration Tab- creates thedata1()
+################################################################################ DATA EXPLORATION
+#Columns and rows selection
   
   output$colControls <- renderUI({
     
@@ -137,9 +135,8 @@ output$tbl <- renderDataTable(thedata1())
 
 
   
-#Continue Data exploration tab 
+# get selection for plots in exploration tab
 #https://github.com/MatePocs/rshiny_apps/blob/main/data_analyser/app.R
-#https://towardsdatascience.com/how-to-build-a-data-analysis-app-in-r-shiny-143bee9338f7
 
 observeEvent(thedata1(),{
 
@@ -158,8 +155,6 @@ fact_var <- eventReactive(input$run_button,input$fact_var)
 
   
 # Create Plots for exploration tab
-# https://data.library.virginia.edu/getting-started-with-shiny/
-  
   plot <- eventReactive(input$run_button,{
     if(input$plotType == 1){
       ggplot(thedata1(),
@@ -170,14 +165,11 @@ fact_var <- eventReactive(input$run_button,input$fact_var)
     }
   })
   
-  
+ 
+# output created plot   
   output$plot <- renderPlot(plot())
   
 # Summary tables for exploration tab
-# https://stackoverflow.com/questions/40623749/what-is-object-of-type-closure-is-not-subsettable-error-in-shiny
-# https://cran.r-project.org/web/packages/data.table/vignettes/datatable-intro.html
-# https://towardsdatascience.com/how-to-make-a-professional-shiny-app-and-not-get-intimidated-with-r-991e636dd111
-
 output$var_1_title <- renderText(paste("Var 1:",var_1(),"Var 2:",var_2(),"Var 3:",fact_var()))
 
 
@@ -215,7 +207,7 @@ output$var1_summary_table <- renderTable({
 
 # Data for ALL models plus Clean up
 data_model_Group <- eventReactive(input$run_model, {
-   df7 <- df1 %>% dplyr::select(-NPA, -DIVISION_ID)  #remove 
+   df7 <- df1 %>% dplyr::select(-NPA, -DIVISION_ID)   
 
     #change year from double to char
     df7 $YEAR <-  as.character(df7$YEAR)
@@ -227,12 +219,12 @@ data_model_Group <- df7
 })
 
 
-# All data check - verify type of each variable
+# All data check - verify type of each variable; output to modeling tab
 output$allcheck <- renderPrint({
   glimpse(data_model_Group())
 })
 
-# Confirm no missing data
+# Confirm no missing data; output to modeling tab
 output$missing <- renderPrint({
   map_dbl(data_model_Group(), function(.x) {sum(is.na(.x))})
 })
@@ -242,7 +234,6 @@ output$missing <- renderPrint({
 ################################################################################ RANDOM FOREST
 
 #create train and test for Random Forest (user can make input changes)
-
 trainIndex_R <- eventReactive(input$run_model, {
   
     trainIndex_R <- data_model_Group()$STATUS %>% createDataPartition(p = input$n_prop_R, list = FALSE) 
@@ -333,9 +324,7 @@ output$rfplot <- renderPlot({
 ################################################################################ GLM - GENERALIZED LM
 # Predictor selection and creating model
 
-
 #create train and test for GLM (user can make input changes)
-
 trainIndex <- eventReactive(input$run_model, {
   
     trainIndex <- data_model_Group()$STATUS %>% createDataPartition(p = input$n_prop, list = FALSE) 
@@ -374,10 +363,8 @@ thedata2 <- data_model_Group() %>% dplyr::select({paste0(selected)})
 })
 
 
-#just output to check dataset for glm
+# output to check dataset for glm
 output$tbl3 <- renderDataTable(head(thedata2(), 7))
-
-
 
 
 # fit glm with selected variables and option to centering/scaling
@@ -394,18 +381,18 @@ fitglm <- eventReactive(input$run_model, {
 
   #caret method
   #if (input$preprocessMe == 1) {
-  #  fitglm <- train(STATUS ~ ., data = newdata, method = "glm", family = "binomial", 
-  #                  #preProcess = c("center", "scale"),
+  #  fitglm <- train(newdata$STATUS ~ ., data = newdata, method = "glm", family = "binomial", 
+                    #preProcess = c("center", "scale"),
   #                  trControl = trainControl(method = "cv", number = input$cross))
   #} else {
-  #  fitglm <- train(STATUS ~ ., data = newdata, method = "glm", family = "binomial", 
+  #  fitglm <- train(newdata$STATUS ~ ., data = newdata, method = "glm", family = "binomial", 
   #                  trControl = trainControl(method = "cv", number = input$cross))
   #}
   
-  
-  #non caret method
-  fitglm <- rpart(newdata$STATUS ~ ., data = newdata, method = "class")
+  #non caret
+  fitglm <-  glm(newdata$STATUS ~ ., data = newdata, family = "binomial")
   })
+
 })
 
 # glm summary
@@ -484,7 +471,7 @@ treefit <- eventReactive(input$run_model, {
     
     #non caret method
     treefit <- rpart(newdata_C$STATUS ~ ., data = newdata_C, method = "class")
-  })
+    })
     
 })
 
@@ -498,9 +485,6 @@ output$treesummary <- renderPrint({
 # classification tree plot
 output$treeplot <- renderPlot({
 
-  #plot(treefit()$finalModel, main = "Classification Tree")
-  #text(treefit()$finalModel, pretty = 0, cex = 0.6)
-  #treeplot <- rpart.plot(treefit)
   fancyRpartPlot(treefit())
 })
 
@@ -588,3 +572,10 @@ output$predResults <- eventReactive(input$run_predict, {
 # https://fderyckel.github.io/machinelearningwithr/case-study-mushrooms-classification.html
 # https://stackoverflow.com/questions/34879305/need-to-use-same-input-for-multiple-outputs-in-shiny
 # https://stackoverflow.com/questions/64768969/r-shiny-creating-factor-variables-and-defining-levels
+# https://community.rstudio.com/t/download-dataset-filtered-in-shiny-input/75770/2
+# https://stackoverflow.com/questions/42261496/selectinput-have-multiple-true-and-filter-based-off-that
+# https://towardsdatascience.com/how-to-build-a-data-analysis-app-in-r-shiny-143bee9338f7
+# https://data.library.virginia.edu/getting-started-with-shiny/
+# https://stackoverflow.com/questions/40623749/what-is-object-of-type-closure-is-not-subsettable-error-in-shiny
+# https://cran.r-project.org/web/packages/data.table/vignettes/datatable-intro.html
+# https://towardsdatascience.com/how-to-make-a-professional-shiny-app-and-not-get-intimidated-with-r-991e636dd111
