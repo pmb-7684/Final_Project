@@ -213,124 +213,52 @@ output$var1_summary_table <- renderTable({
 })
 
 
+# Data for ALL models plus Clean up
+data_model_Group <- eventReactive(input$run_model, {
+   df7 <- df1 %>% dplyr::select(-NPA, -DIVISION_ID)  #remove 
 
-###############################################################################################################
-# Data for all models - fact
-#  able to run in .rmd using both Open/Close and 0/1 - undercontruction, not used; may tested - still got error
-data_model_Group <- eventReactive(input$run_model1, {
-  
-  df7<- df1 %>% dplyr::select(-NPA, -DIVISION_ID)
-  
-  #Additional factoring
-  df7$STATUS = as.factor(df2$STATUS)
-  df7$STATUS = factor(df7$STATUS, levels = c("Closed", "Open"), labels = c(1,0))
-  
-  df7$DIVISION = as.factor(df2$DIVISION)
-  df7$DIVISION = factor(df2$DIVISION, levels = c( "North Tryon","Metro", "Eastway",
-                                                  "Central",
-                                                  "North",
-                                                  "University City",
-                                                  "Westover",
-                                                  "Steele Creek",
-                                                  "Providence",
-                                                  "South",
-                                                  "Freedom",
-                                                  "Hickory Grove",
-                                                  "Independence",
-                                                  "Airport" ,
-                                                  "Huntersville"),
-                                                  labels = c(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15))
+    #change year from double to char
+    df7 $YEAR <-  as.character(df7$YEAR)
 
-  df7$LOCATION = as.factor(df2$LOCATION) 
-  df7$LOCATION = factor(df2$LOCATION, levels = c("Indoor", "Parking Lot", "Outdoors", "Parking Deck", "Other",
-                                                  labels = c(1,2,3,4,5)))
+    #make each variable a factor; it should have the levels already
+    df7 <- df7 %>% map_df(function(.x) as.factor(.x))
 
-  df7$PLACE_TYPE = as.factor(df$PLACE_TYPE)
-  df7$PLACE_TYPE = factor(df$PLACE_TYPE, levels = c( "Residential", "Open Area", "Retail", "Commercial Place"),
-                                                  labels = c(1,2,3,4))
+data_model_Group <- df7
+})
 
-  df7$PLACE_DETAIL = as.factor(df$PLACE_DETAIL)  
-  df7$PLACE_DETAIL = factor(df2$PLACE_DETAIL, levels = c("Apartment/Duplex Private Res",
-                                                         "Street/Highway",
-                                                         "Private Residence",
-                                                         "Department Store",
-                                                         "Other - Commercial Place",
-                                                         "Restaurant/Diner/Coffee Shop",
-                                                         "Hotel/Motel",
-                                                         "Grocery Store/Supermarket",
-                                                         "Convenience Store",
-                                                         "Other - Retail",
-                                                         "Gas Station",
-                                                         "Other - Open Area"),
-                                                    labels = c(1,2,3,4,5,6,7,8,9,10,11,12))
 
-  df7$NIBRS = as.factor(df2$NIBRS) 
-  df7$NIBRS = factor(df2$NIBRS, levels = c( "All Other Offenses",
-                                            "Simple Assault",
-                                            "Other Unlisted Non-Criminal",
-                                            "Damage/Vandalism Of Property",
-                                            "All Other Thefts",
-                                            "Intimidation",
-                                            "Burglary/B&E",
-                                            "Shoplifting",
-                                            "Missing Person",
-                                            "Motor Vehicle Theft",
-                                            "Drug/Narcotic Violations",
-                                            "Aggravated Assault"),
-                                            labels = c(1,2,3,4,5,6,7,8,9,10,11,12))
-  
-  df7$YEAR = as.factor(df2$YEAR)
-  
-  df7$MONTH = as.factor(df2$MONTH)
-  df7$MONTH = factor(df2$MONTH, levels = c("07", "08", "09"), labels = c(1,2,3))
-  
-  data_model_Group <- df7
+# All data check - verify type of each variable
+output$allcheck <- renderPrint({
+  glimpse(data_model_Group())
+})
+
+# Confirm no missing data
+output$missing <- renderPrint({
+  map_dbl(data_model_Group(), function(.x) {sum(is.na(.x))})
 })
 
 
 
-#############################################################################################################
-# Predictor selection and creating model
-# RANDOM FOREST          creates thedata4()
-# For random forest and classification, we should not need to encode; it should be able to handle as is.
+################################################################################ RANDOM FOREST
 
-#Slight cleanup to get predictions & complete basic factoring - Attempt 1
-data_model_RS <- eventReactive(input$run_model, {
-  df4 <- df1 %>% dplyr::select(-DIVISION_ID, -NPA)
+#create train and test for Random Forest (user can make input changes)
+
+trainIndex_R <- eventReactive(input$run_model, {
   
-  #df4$YEAR <- as.factor(df4$YEAR)
-  df4$MONTH <- as.numeric(as.factor(df4$MONTH))
-  df4$DIVISION <- as.numeric(as.factor(df4$DIVISION))
-  df4$LOCATION <- as.numeric(as.factor(df4$LOCATION))
-  df4$PLACE_TYPE <- as.numeric(as.factor(df4$PLACE_TYPE))
-  df4$PLACE_DETAIL <- as.numeric(as.factor(df4$PLACE_DETAIL))
-  df4$NIBRS <- as.numeric(as.factor(df4$NIBRS))
-  
-  df4$YEAR <- as.factor(as.integer(df4$YEAR))
-  
-  #change Open/Close to 0/1
-  df4$STATUS <- ifelse(df4$STATUS == "Closed",1,0)
-  df4$STATUS <- as.factor(df4$STATUS)
-  data_model_RS <- df4 
+    trainIndex_R <- data_model_Group()$STATUS %>% createDataPartition(p = input$n_prop_R, list = FALSE) 
 })
 
 
-#Slight cleanup to get predictions & complete basic factoring - Attempt 2
-# https://www.r-bloggers.com/2017/11/predict-customer-churn-logistic-regression-decision-tree-and-random-forest/
-data_model_Fac <- eventReactive(input$run_model, {
-  df4 <- df1 %>% dplyr::select(-DIVISION_ID, -NPA)
+train_R <- eventReactive(input$run_model,{
+
+    train_R <- data_model_Group()[trainIndex_R(), ]
+})
+
+
+test_R  <- eventReactive(input$run_model,{
+ 
+    test_R  <- data_model_Group()[-trainIndex_R(), ]
   
-  df4$MONTH <- as.factor(df4$MONTH)
-  df4$DIVISION <- as.factor(df4$DIVISION)
-  df4$LOCATION <- as.factor(df4$LOCATION)
-  df4$PLACE_TYPE <- as.factor(df4$PLACE_TYPE)
-  df4$PLACE_DETAIL <- as.factor(df4$PLACE_DETAIL)
-  df4$NIBRS <- as.factor(df4$NIBRS)
-  
-  df4$YEAR <- as.factor(df4$YEAR)
-  df4$STATUS <- as.factor(df4$STATUS)
-  
-  data_model_Fac <- df4 
 })
 
 
@@ -346,58 +274,19 @@ txtp_R <- reactive({ input$colsP_R })
     output$selectedTextp_R <- renderText({paste0(txtp_R() ,sep=", ") 
 })
 
+    
+    
 #data based on predictors selected   
 thedata4 <- eventReactive(input$run_model, {
     response_R <- list(c("STATUS"))
     selected_R <- unlist(append(txtp_R(), response_R))
     
-    thedata4 <- data_model_Fac() %>% dplyr::select({paste0(selected_R)})   #HERE - chg dataset for RF prior split
+thedata4 <- data_model_Group() %>% dplyr::select({paste0(selected_R)})  
 })
 
 
-#just output to check dataset for RF
+# check output results RF dataset
 output$tbl2 <- renderDataTable(head(thedata4(), 7))
-
-
-#create train and test for RF
-trainIndex_R <- eventReactive(input$run_model, {
-  data2_R <- thedata4()
-  trainIndex_R <- createDataPartition(data2_R$STATUS, p = input$n_prop_R, list = FALSE)
-})
-
-train_R <- eventReactive(input$run_model,{
-  data2_R <- thedata4()
-  train_R <- data2_R[trainIndex_R(),]
-})
-
-test_R  <- eventReactive(input$run_model,{
-  data2_R <- thedata4()
-  test_R  <- data2_R[-trainIndex_R(),]
-  
-})
-
-# Below attempt to use One hot encoding
-#applies One Hot Encoding by encoding the categorical independent variables for TRAINING - not used;
-#https://www.youtube.com/watch?v=qFeeldwPiNE
-
-#trainX <- eventReactive(input$run_model, {
-  
-#      trainfactors <- model.matrix(train_R()$STATUS ~ train_R()$MONTH+ train_R()$DIVISION+ train_R()$LOCATION +
-#                                   train_R()$PLACE_TYPE+ train_R()$PLACE_DETAIL+ train_R()$NIBRS)[,-1]
-      
-#  trainX <- as.matrix(data.frame(trainfactors, train_R()$YEAR)) 
-#})
-
-
-#applies One Hot Encoding by encoding the categorical independent variables for TEST  - not used;
-#https://www.youtube.com/watch?v=qFeeldwPiNE
-#testX <- eventReactive(input$run_model, {
-  
-#  trainfactors <- model.matrix(train_R()$STATUS ~ train_R()$MONTH+ train_R()$DIVISION+ train_R()$LOCATION +
-#                                 train_R()$PLACE_TYPE+ train_R()$PLACE_DETAIL+ train_R()$NIBRS)[,-1]
-  
-#  testX <- as.matrix(data.frame(testfactors, train_R()$YEAR)) 
-#})
 
 
 
@@ -410,54 +299,63 @@ fitrf <- eventReactive(input$run_model, {
   selected_R <- unlist(append(txtp_R(), response_R))
   
   newdata_R <- Train[, selected_R]
-  # newdata_R <- trainX()   #used for One Hot method
-  
-  #caret method
-  #fitrf <- train(train_R()$STATUS ~ ., data = newdata_R, method = "rf", 
+
+  #caret method (generated error)
+  #fitrf <- train(newdata_R$STATUS ~ ., data = newdata_R, method = "rf", 
   #               trControl = trainControl(method = "cv", number = input$cross_R),
-  #               tuneGrid = expand.grid(mtry=sqrt(ncol(newdata_R))), 
-                 #ntree = 300, mtry = 5
+  #               tuneGrid = data.frame(mtry= 1:ncol(newdata_R)) 
   #               )
   
   #non caret method
-  fitrf <- randomForest(STATUS ~., data = newdata_R)
+  fitrf <- randomForest(newdata_R$STATUS ~ ., data = newdata_R, 
+                        ntree = 300,  importance = TRUE)
   
   })
 })
 
-
 # random forest summary
-output$rfplot <- renderPlot({
-  varimport <- varImp(fitrf())
-  plot(varimport)
+output$rfsummary <- renderPrint({
+  print(fitrf())
 })
 
+# random forest plot
+output$rfplot <- renderPlot({  
+   varImpPlot(fitrf())
+})
 
-###############################################################################################################
+# Var Importance
+#output$rfmatrix <- renderPlot({
+#    importance(fitrf())
+#})
+
+
+
+################################################################################ GLM - GENERALIZED LM
 # Predictor selection and creating model
-# GLM - GENERALIZED LM          creates thedata2()
 
-# complete basic factoring for categorical variables
-data_model <- eventReactive(input$run_model, {
-  df4 <- df1 %>% dplyr::select(-DIVISION_ID, -NPA)
-  #df4$YEAR <- as.factor(df4$YEAR)
-  df4$MONTH <- as.numeric(as.factor(df4$MONTH))
-  df4$DIVISION <- as.numeric(as.factor(df4$DIVISION))
-  df4$LOCATION <- as.numeric(as.factor(df4$LOCATION))
-  df4$PLACE_TYPE <- as.numeric(as.factor(df4$PLACE_TYPE))
-  df4$PLACE_DETAIL <- as.numeric(as.factor(df4$PLACE_DETAIL))
-  df4$NIBRS <- as.numeric(as.factor(df4$NIBRS))
+
+#create train and test for GLM (user can make input changes)
+
+trainIndex <- eventReactive(input$run_model, {
   
-  df4$YEAR <- as.factor(as.integer(df4$YEAR))
-  
-  #change Open/Close to 0/1
-  df4$STATUS <- ifelse(df4$STATUS == "Closed",1,0)
-  df4$STATUS <- as.factor(df4$STATUS)
-  
-  data_model <- df4 
+    trainIndex <- data_model_Group()$STATUS %>% createDataPartition(p = input$n_prop, list = FALSE) 
 })
 
-#gets predictors for glm
+
+train <- eventReactive(input$run_model,{
+  
+    train <- data_model_Group()[trainIndex(), ]
+})
+
+
+test  <- eventReactive(input$run_model,{
+  
+    test  <- data_model_Group()[-trainIndex(), ]
+  
+})
+
+
+#gets predictors for GLM
 output$colPredict <- renderUI({
   
   pickerInput(inputId="colsP", "Choose Predictors", choices = c("YEAR", "DIVISION", "LOCATION", "PLACE_TYPE","PLACE_DETAIL", "NIBRS","MONTH"), multiple = TRUE)
@@ -466,124 +364,99 @@ output$colPredict <- renderUI({
 txtp <- reactive({ input$colsP })
 output$selectedTextp <- renderText({paste0(txtp() ,sep=", ") })
 
+
 #creates glm dataset to output for verification
 thedata2 <- eventReactive(input$run_model, {
-  response <- list(c("STATUS"))
-  selected <- unlist(append(txtp(), response))
+    response <- list(c("STATUS"))
+    selected <- unlist(append(txtp(), response))
   
-  thedata2 <- data_model() %>% dplyr::select({paste0(selected)}) 
+thedata2 <- data_model_Group() %>% dplyr::select({paste0(selected)}) 
 })
+
 
 #just output to check dataset for glm
 output$tbl3 <- renderDataTable(head(thedata2(), 7))
 
 
-#create train and test for glm
-trainIndex <- eventReactive(input$run_model, {
-  data2 <- thedata2()
-  trainIndex <- createDataPartition(data2$STATUS, p = input$n_prop, list = FALSE)
-})
-
-train <- eventReactive(input$run_model,{
-  data2 <- thedata2()
-  train <- data2[trainIndex(),]
-})
-
-test  <- eventReactive(input$run_model,{
-  data2 <- thedata2()
-  test  <- data2[-trainIndex(),]
-  
-})
 
 
 # fit glm with selected variables and option to centering/scaling
-# https://stackoverflow.com/questions/64768969/r-shiny-creating-factor-variables-and-defining-levels
 fitglm <- eventReactive(input$run_model, {
   withProgress(message = 'Modeling in progress. Please wait ...', {
+    
+  Train <- train()
   
   #creates selected glm dataset for modeling
   response <- list(c("STATUS"))
-  selection <- unlist(append(input$colsP, response))
-  newdata <- train()[, selection]
-
+  selected <- unlist(append(txtp(), response))
   
-  if (input$preprocessMe == 1) {
-    fitglm <- train(STATUS ~ ., data = newdata, method = "glm", family = "binomial", 
-                    #preProcess = c("center", "scale"),
-                    trControl = trainControl(method = "cv", number = input$cross))
-  } else {
-    fitglm <- train(STATUS ~ ., data = newdata, method = "glm", family = "binomial", 
-                    trControl = trainControl(method = "cv", number = input$cross))
-  }
+  newdata <- Train[, selected]
+
+  #caret method
+  #if (input$preprocessMe == 1) {
+  #  fitglm <- train(STATUS ~ ., data = newdata, method = "glm", family = "binomial", 
+  #                  #preProcess = c("center", "scale"),
+  #                  trControl = trainControl(method = "cv", number = input$cross))
+  #} else {
+  #  fitglm <- train(STATUS ~ ., data = newdata, method = "glm", family = "binomial", 
+  #                  trControl = trainControl(method = "cv", number = input$cross))
+  #}
+  
+  
+  #non caret method
+  fitglm <- rpart(newdata$STATUS ~ ., data = newdata, method = "class")
   })
 })
 
 # glm summary
 output$glmsummary <- renderPrint({
-  summary(fitglm())
+      summary(fitglm())
 })
 
 
-# ########################################################################################################
-# CLASSIFICATION TREE          creates thedata3() 
+# ############################################################################## CLASSIFICATION TREE
 
-# complete basic factoring for categorical variables
-data_model_C <- eventReactive(input$run_model, {
-  df4 <- df1 %>% dplyr::select(-DIVISION_ID, -NPA)
+#create train and test for Classification tree (user can make input changes)
 
-  df4$MONTH <- as.numeric(as.factor(df4$MONTH))
-  df4$DIVISION <- as.numeric(as.factor(df4$DIVISION))
-  df4$LOCATION <- as.numeric(as.factor(df4$LOCATION))
-  df4$PLACE_TYPE <- as.numeric(as.factor(df4$PLACE_TYPE))
-  df4$PLACE_DETAIL <- as.numeric(as.factor(df4$PLACE_DETAIL))
-  df4$NIBRS <- as.numeric(as.factor(df4$NIBRS))
+trainIndex_C <- eventReactive(input$run_model, {
   
-  df4$YEAR <- as.factor(as.integer(df4$YEAR))
-  
-  #change Open/Close to 0/1
-  df4$STATUS <- ifelse(df4$STATUS == "Closed",1,0)
-  df4$STATUS <- as.factor(df4$STATUS)
-  
-  data_model_C <- df4 
+      trainIndex_C <- data_model_Group()$STATUS %>% createDataPartition(p = input$n_prop, list = FALSE) 
 })
 
 
+train_C <- eventReactive(input$run_model,{
+  
+      train_C <- data_model_Group()[trainIndex_C(), ]
+})
+
+
+test_C  <- eventReactive(input$run_model,{
+  
+      test_C  <- data_model_Group()[-trainIndex_C(), ]
+  
+})
+
+
+#creates classification dataset to output for verification
 output$colPredict_C <- renderUI({
   
-  pickerInput(inputId="colsP_C", "Choose Predictors", choices = c("YEAR", "DIVISION", "LOCATION", "PLACE_TYPE","PLACE_DETAIL", "NIBRS", "MONTH"), multiple = TRUE)
+    pickerInput(inputId="colsP_C", "Choose Predictors", choices = c("YEAR", "DIVISION", "LOCATION", "PLACE_TYPE","PLACE_DETAIL", "NIBRS", "MONTH"), multiple = TRUE)
 })
 
 txtp_C <- reactive({ input$colsP_C })
-output$selectedTextp_C <- renderText({paste0(txtp_C() ,sep=", ") })
+    output$selectedTextp_C <- renderText({paste0(txtp_C() ,sep=", ") })
 
 thedata3 <- eventReactive(input$run_model, {
-  response_C <- list(c("STATUS"))
-  selected_C <- unlist(append(txtp_C(), response_C))
-  
-  thedata3 <- data_model_C() %>% dplyr::select({paste0(selected_C)}) 
+    response_C <- list(c("STATUS"))
+    selected_C <- unlist(append(txtp_C(), response_C))
+    
+    thedata3 <- data_model_Group() %>% dplyr::select({paste0(selected_C)}) 
 })
 
 
 #just output to check dataset for classification
 output$tbl4 <- renderDataTable(head(thedata3(), 7))
 
-
-#create train and test for  classification
-trainIndex_C <- eventReactive(input$run_model, {
-  data2_C <- thedata3()
-  trainIndex_C <- createDataPartition(data2_C$STATUS, p = input$n_prop_C, list = FALSE)
-})
-
-train_C <- eventReactive(input$run_model,{
-  data2_C <- thedata3()
-  train_C <- data2_C[trainIndex_C(),]
-})
-
-test_C  <- eventReactive(input$run_model,{
-  data2_C <- thedata3()
-  test_C  <- data2_C[-trainIndex_C(),]
-  
-})
 
 
 
@@ -596,32 +469,39 @@ treefit <- eventReactive(input$run_model, {
     selected_C <- unlist(append(txtp_C(), response_C))
     
     newdata_C <- Train[, selected_C]
-    
-    if (input$preprocessMe_C == 1) {
-      treefit <- train(STATUS ~ ., data = newdata_C, method = "rpart", 
-                       #preProcess = c("center", "scale"),
-                       trControl = trainControl(method = "cv", number = input$cross_C))
-      
-      #treefit <- rpart(STATUS ~ ., data = newdata_C, method = "class")
-    } else {
-
-      treefit <- train(STATUS ~ ., data = newdata_C, method = "rpart", 
-                       trControl = trainControl(method = "cv", number = input$cross_C))
+ 
+# caret method   
+#    if (input$preprocessMe_C == 1) {
+#      treefit <- train(STATUS ~ ., data = newdata_C, method = "rpart", 
+#                       #preProcess = c("center", "scale"),
+#                       trControl = trainControl(method = "cv", number = input$cross_C))
+#    } else {
+#      treefit <- train(STATUS ~ ., data = newdata_C, method = "rpart", 
+#                       trControl = trainControl(method = "cv", number = input$cross_C))
       #treefit <- rpart(STATUS ~ ., data = newdata_C, method = "class", minsplit=2, minbucket=1)
-    }
+#    }
+
     
+    #non caret method
+    treefit <- rpart(newdata_C$STATUS ~ ., data = newdata_C, method = "class")
   })
+    
 })
 
 
+# tree summary
+output$treesummary <- renderPrint({
+  summary(treefit())
+})
 
-# classification tree summary
+
+# classification tree plot
 output$treeplot <- renderPlot({
-  treefit <- treefit()
-  
-  plot(treefit$finalModel, main = "Classification Tree")
-  text(treefit$finalModel, pretty = 0, cex = 0.6)
-  #fancyRpartPlot(treefit)
+
+  #plot(treefit()$finalModel, main = "Classification Tree")
+  #text(treefit()$finalModel, pretty = 0, cex = 0.6)
+  #treeplot <- rpart.plot(treefit)
+  fancyRpartPlot(treefit())
 })
 
 
@@ -705,3 +585,6 @@ output$predResults <- eventReactive(input$run_predict, {
 # https://www.youtube.com/watch?v=rxbgmluhp4o
 # https://www.r-bloggers.com/2017/01/random-forest-classification-of-mushrooms/
 # https://www.r-bloggers.com/2017/11/predict-customer-churn-logistic-regression-decision-tree-and-random-forest/
+# https://fderyckel.github.io/machinelearningwithr/case-study-mushrooms-classification.html
+# https://stackoverflow.com/questions/34879305/need-to-use-same-input-for-multiple-outputs-in-shiny
+# https://stackoverflow.com/questions/64768969/r-shiny-creating-factor-variables-and-defining-levels

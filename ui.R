@@ -150,19 +150,27 @@ sidebarLayout(
               #GLM
               #Get proportions
               br(),strong("Generalized LM Modeling"),br(),
-              selectInput(inputId = "n_prop",
+              numericInput(inputId = "n_prop",
                           label = "Choose Partition Proportion:",
-                          choices = c(.65, .70, .75, .80),
-                          selected = .75),
+                          #choices = c(.65, .70, .75, .80),    #from selectInput
+                          #selected = .75
+                          value = .75,
+                          min = .50,
+                          max = .90,
+                          step = .05),
               #Get Preprocess
               checkboxInput("preprocessMe", 
                             "PreProcess with center & scale?", 
                             value = TRUE),
               #Get CV
-              selectInput(inputId = "cross",
+              numericInput(inputId = "cross",
                           label = "Number CV:",
-                          choices = c(5, 10, 15, 20),
-                          selected = 5),
+                          #choices = c(5, 10, 15, 20),
+                          #selected = 5
+                          value = 5,
+                          min = 5,
+                          max = 20,
+                          step = 5),
               #Get Predictors
               uiOutput("colPredict"),
               div(style="text-align:left","Select Predictors:"),
@@ -173,19 +181,27 @@ sidebarLayout(
               # Classification
               #Get proportions
               strong("Classification Tree Modeling"),br(),
-              selectInput(inputId = "n_prop_C",
+              numericInput(inputId = "n_prop_C",
                           label = "Choose Partition Proportion:",
-                          choices = c(.65, .70, .75, .80),
-                          selected = .75),
+                          #choices = c(.65, .70, .75, .80),    #from selectInput
+                          #selected = .75
+                          value = .75,
+                          min = .50,
+                          max = .90,
+                          step = .05),
               #Get Preprocess
               checkboxInput("preprocessMe_C", 
                             "PreProcess with center & scale?", 
                             value = TRUE),
               #Get CV
-              selectInput(inputId = "cross_C",
+              numericInput(inputId = "cross_C",
                           label = "Number CV:",
-                          choices = c(5, 10, 15, 20),
-                          selected = 5),
+                          #choices = c(5, 10, 15, 20),
+                          #selected = 5
+                          value = 5,
+                          min = 5,
+                          max = 20,
+                          step = 5),
               #Get Predictors
               uiOutput("colPredict_C"),
               div(style="text-align:left","Select Predictors:"),
@@ -195,15 +211,23 @@ sidebarLayout(
               # Random Forest
               #Get proportions
               strong("Random Forest Modeling"),br(),
-              selectInput(inputId = "n_prop_R",
+              numericInput(inputId = "n_prop_R",
                           label = "Choose Partition Proportion:",
-                          choices = c(.65, .70, .75, .80),
-                          selected = 0.75),
+                          #choices = c(.65, .70, .75, .80),    #from selectInput
+                          #selected = .75
+                          value = .75,
+                          min = .50,
+                          max = .90,
+                          step = .05),
               #Get CV
-              selectInput(inputId = "cross_R",
+              numericInput(inputId = "cross_R",
                           label = "Number CV:",
-                          choices = c(5, 10, 15, 20),
-                          selected = 5),
+                          #choices = c(5, 10, 15, 20),
+                          #selected = 5
+                          value = 5,
+                          min = 5,
+                          max = 20,
+                          step = 5),
               #Get Predictors
               uiOutput("colPredict_R"),
               div(style="text-align:left","Select Predictors:"),
@@ -247,24 +271,30 @@ sidebarLayout(
      tabPanel("Modeling Info", icon = icon("info"),
               column(10,includeMarkdown("info.md"))
      ),
+     tabPanel("Data Summary",icon = icon("table"),
+              verbatimTextOutput("allcheck"), #check factor
+              verbatimTextOutput("missing")   #check NA
+     ), 
      tabPanel("Model - GLM",icon = icon("table"),
-              DTOutput("tbl3"),
               verbatimTextOutput("glmsummary"),
-
+              DTOutput("tbl3")
      ), 
      
      tabPanel("Model - Classification", icon = icon("table"),
-              DTOutput("tbl4"),
+              verbatimTextOutput("treesummary"),
               plotOutput("treeplot"),
+              DTOutput("tbl4")
               #textOutput("accuracy"),
               ),
      tabPanel("Model - RF", icon = icon("table"),
-              DTOutput("tbl2"),
+              verbatimTextOutput("rfsummary"),
+              #plotOutput("rfmatrix"),
               plotOutput("rfplot"),
+              DTOutput("tbl2")
               #textOutput("accuracy"),
               ),
      tabPanel("Prediction", icon = icon("list-alt"),
-              textOutput("predResults"),
+              textOutput("predResults")
               #textOutput("accuracy"),
              )
  )
