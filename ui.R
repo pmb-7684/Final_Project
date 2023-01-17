@@ -269,7 +269,7 @@ sidebarLayout(
      ), 
      tabPanel("Model - GLM",icon = icon("table"),
               verbatimTextOutput("glmsummary"),
-              verbatimTextOutput("matrix"),
+              #verbatimTextOutput("matrix"),
               DTOutput("tbl3")
      ), 
      
@@ -281,7 +281,7 @@ sidebarLayout(
      ),
      tabPanel("Model - RF", icon = icon("table"),
               verbatimTextOutput("rfsummary"),
-              verbatimTextOutput("matrix_RF"),
+              #verbatimTextOutput("matrix_RF"),
               #verbatimTextOutput("important"),
               plotOutput("rfplot"),
               DTOutput("tbl2")
@@ -290,7 +290,7 @@ sidebarLayout(
              tableOutput("finalResults")
      ),
      tabPanel("Prediction", icon = icon("list-alt"),
-              textOutput("predictResult")
+              textOutput("predResults")
              )
        )
    )
