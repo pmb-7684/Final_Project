@@ -152,21 +152,17 @@ sidebarLayout(
               br(),strong("Generalized LM Modeling"),br(),
               numericInput(inputId = "n_prop",
                           label = "Choose Partition Proportion:",
-                          #choices = c(.65, .70, .75, .80),    #from selectInput
-                          #selected = .75
                           value = .75,
                           min = .50,
                           max = .90,
                           step = .05),
               #Get Preprocess
-              checkboxInput("preprocessMe", 
-                            "PreProcess with center & scale?", 
-                            value = TRUE),
-              #Get CV
+              #checkboxInput("preprocessMe", 
+              #              "PreProcess with center & scale?", 
+              #              value = TRUE),
+              #Get Cross Validation
               numericInput(inputId = "cross",
                           label = "Number CV:",
-                          #choices = c(5, 10, 15, 20),
-                          #selected = 5
                           value = 5,
                           min = 5,
                           max = 20,
@@ -183,21 +179,17 @@ sidebarLayout(
               strong("Classification Tree Modeling"),br(),
               numericInput(inputId = "n_prop_C",
                           label = "Choose Partition Proportion:",
-                          #choices = c(.65, .70, .75, .80),    #from selectInput
-                          #selected = .75
                           value = .75,
                           min = .50,
                           max = .90,
                           step = .05),
               #Get Preprocess
-              checkboxInput("preprocessMe_C", 
-                            "PreProcess with center & scale?", 
-                            value = TRUE),
-              #Get CV
+              #checkboxInput("preprocessMe_C", 
+              #              "PreProcess with center & scale?", 
+              #              value = TRUE),
+              #Get Cross Validation
               numericInput(inputId = "cross_C",
                           label = "Number CV:",
-                          #choices = c(5, 10, 15, 20),
-                          #selected = 5
                           value = 5,
                           min = 5,
                           max = 20,
@@ -213,17 +205,13 @@ sidebarLayout(
               strong("Random Forest Modeling"),br(),
               numericInput(inputId = "n_prop_R",
                           label = "Choose Partition Proportion:",
-                          #choices = c(.65, .70, .75, .80),    #from selectInput
-                          #selected = .75
                           value = .75,
                           min = .50,
                           max = .90,
                           step = .05),
-              #Get CV
+              #Get Cross Validation
               numericInput(inputId = "cross_R",
                           label = "Number CV:",
-                          #choices = c(5, 10, 15, 20),
-                          #selected = 5
                           value = 5,
                           min = 5,
                           max = 20,
@@ -234,6 +222,10 @@ sidebarLayout(
               textOutput("selectedTextp_R"),
               br(),
               actionButton("run_model", "Run Models", icon = icon("play")),
+              
+              hr(style = "border-top: 1px solid #000000;"),
+              br(),
+              actionButton("run_compare", "Fit to Test", icon = icon("play")),
               
               hr(style = "border-top: 1px solid #000000;"),
               
@@ -277,28 +269,31 @@ sidebarLayout(
      ), 
      tabPanel("Model - GLM",icon = icon("table"),
               verbatimTextOutput("glmsummary"),
+              verbatimTextOutput("matrix"),
               DTOutput("tbl3")
      ), 
      
      tabPanel("Model - Classification", icon = icon("table"),
               verbatimTextOutput("treesummary"),
+              verbatimTextOutput("matrix_C"),
               plotOutput("treeplot"),
               DTOutput("tbl4")
-              #textOutput("accuracy"),
-              ),
+     ),
      tabPanel("Model - RF", icon = icon("table"),
               verbatimTextOutput("rfsummary"),
-              #plotOutput("rfmatrix"),
+              verbatimTextOutput("matrix_RF"),
+              #verbatimTextOutput("important"),
               plotOutput("rfplot"),
               DTOutput("tbl2")
-              #textOutput("accuracy"),
-              ),
+     ),
+     tabPanel("Fit to Test", icon = icon("list-alt"),
+             tableOutput("finalResults")
+     ),
      tabPanel("Prediction", icon = icon("list-alt"),
-              textOutput("predResults")
-              #textOutput("accuracy"),
+              textOutput("predictResult")
              )
- )
-)
+       )
+   )
 ))
 
 

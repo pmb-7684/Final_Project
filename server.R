@@ -21,6 +21,7 @@ library(rpart.plot)             # Recursive Partitioning and Regression Trees
 library(RColorBrewer)           # Provides color schemes for maps (and other graphics)
 
 
+
 df <- read_csv("df2022.csv")    #1/0 for STATUS               once complete model; one retain one dataset
 df1 <- read_csv("df2022_.csv")  #open/closed for STATUS
 
@@ -207,8 +208,8 @@ output$var1_summary_table <- renderTable({
 
 # Data for ALL models plus Clean up
 data_model_Group <- eventReactive(input$run_model, {
-   df7 <- df1 %>% dplyr::select(-NPA, -DIVISION_ID)   
-
+   df7 <- df1 %>% dplyr::select(-NPA, -DIVISION_ID, -PLACE_TYPE)   
+    # removed PLACE.TYPE to resolve correlation issues during fit test
     #change year from double to char
     df7 $YEAR <-  as.character(df7$YEAR)
 
@@ -257,7 +258,7 @@ test_R  <- eventReactive(input$run_model,{
 #get predictors for RF
 output$colPredict_R <- renderUI({
   
-  pickerInput(inputId="colsP_R", "Choose Predictors", choices = c("YEAR", "DIVISION", "LOCATION", "PLACE_TYPE","PLACE_DETAIL","NIBRS", "MONTH"), multiple = TRUE)
+  pickerInput(inputId="colsP_R", "Choose Predictors", choices = c("YEAR", "DIVISION", "LOCATION", "PLACE_DETAIL","NIBRS", "MONTH"), multiple = TRUE)
 })
 
 
@@ -282,7 +283,7 @@ output$tbl2 <- renderDataTable(head(thedata4(), 7))
 
 
 # fit random forest model
-fitrf <- eventReactive(input$run_model, {
+fitrf1 <- eventReactive(input$run_model, {
   withProgress(message = 'Modeling in progress. Please wait ...', {
   Train <- train_R()
   
@@ -298,28 +299,40 @@ fitrf <- eventReactive(input$run_model, {
   #               )
   
   #non caret method
-  fitrf <- randomForest(newdata_R$STATUS ~ ., data = newdata_R, 
+  fitrf1 <- randomForest(newdata_R$STATUS ~ ., data = newdata_R, 
                         ntree = 300,  importance = TRUE)
   
   })
 })
 
+
+
+
+
 # random forest summary
 output$rfsummary <- renderPrint({
-  print(fitrf())
+  print(fitrf1())
 })
 
 # random forest plot
 output$rfplot <- renderPlot({  
-   varImpPlot(fitrf())
+   varImpPlot(fitrf1())
 })
 
-# Var Importance
-#output$rfmatrix <- renderPlot({
-#    importance(fitrf())
-#})
+# 10 most important variables
+output$important <- renderPrint({
+  importance(fitrf1()) %>% data.frame() %>% 
+    rownames_to_column(var = "Variable") %>% 
+    arrange(desc(MeanDecreaseGini)) %>% 
+    head(10)
+})
 
-
+# confustion matrix for RF
+output$matrix_RF <- renderPrint({
+  caret::confusionMatrix(data=fitrf1(), 
+                         reference = train_R()$STATUS, 
+                         positive="Closed")
+})
 
 ################################################################################ GLM - GENERALIZED LM
 # Predictor selection and creating model
@@ -347,7 +360,7 @@ test  <- eventReactive(input$run_model,{
 #gets predictors for GLM
 output$colPredict <- renderUI({
   
-  pickerInput(inputId="colsP", "Choose Predictors", choices = c("YEAR", "DIVISION", "LOCATION", "PLACE_TYPE","PLACE_DETAIL", "NIBRS","MONTH"), multiple = TRUE)
+  pickerInput(inputId="colsP", "Choose Predictors", choices = c("YEAR", "DIVISION", "LOCATION", "PLACE_DETAIL", "NIBRS","MONTH"), multiple = TRUE)
 })
 
 txtp <- reactive({ input$colsP })
@@ -401,6 +414,13 @@ output$glmsummary <- renderPrint({
 })
 
 
+# confustion matrix for RF
+output$matrix <- renderPrint({
+  caret::confusionMatrix(fitglm(), 
+                         reference = train()$STATUS, 
+                         positive="Closed")
+})
+
 # ############################################################################## CLASSIFICATION TREE
 
 #create train and test for Classification tree (user can make input changes)
@@ -427,7 +447,7 @@ test_C  <- eventReactive(input$run_model,{
 #creates classification dataset to output for verification
 output$colPredict_C <- renderUI({
   
-    pickerInput(inputId="colsP_C", "Choose Predictors", choices = c("YEAR", "DIVISION", "LOCATION", "PLACE_TYPE","PLACE_DETAIL", "NIBRS", "MONTH"), multiple = TRUE)
+    pickerInput(inputId="colsP_C", "Choose Predictors", choices = c("YEAR", "DIVISION", "LOCATION", "PLACE_DETAIL", "NIBRS", "MONTH"), multiple = TRUE)
 })
 
 txtp_C <- reactive({ input$colsP_C })
@@ -458,97 +478,150 @@ treefit <- eventReactive(input$run_model, {
     newdata_C <- Train[, selected_C]
  
 # caret method   
-#    if (input$preprocessMe_C == 1) {
-#      treefit <- train(STATUS ~ ., data = newdata_C, method = "rpart", 
-#                       #preProcess = c("center", "scale"),
-#                       trControl = trainControl(method = "cv", number = input$cross_C))
-#    } else {
-#      treefit <- train(STATUS ~ ., data = newdata_C, method = "rpart", 
-#                       trControl = trainControl(method = "cv", number = input$cross_C))
-      #treefit <- rpart(STATUS ~ ., data = newdata_C, method = "class", minsplit=2, minbucket=1)
-#    }
-
+    treefit <- caret::train(STATUS ~ ., data = newdata_C, method = "rpart", 
+                       #preProcess = c("center", "scale"),
+                       trControl = trainControl(method = "cv", number = input$cross_C))
     
-    #non caret method
-    treefit <- rpart(newdata_C$STATUS ~ ., data = newdata_C, method = "class")
+  
     })
-    
+
+})
+
+
+treefit1 <- eventReactive(input$run_model, {
+
+  Train <- train_C()
+  
+  response_C <- list(c("STATUS"))
+  selected_C <- unlist(append(txtp_C(), response_C))
+  
+  newdata_C <- Train[, selected_C]
+  
+#non caret method
+  treefit1 <- rpart(newdata_C$STATUS ~ ., data = newdata_C, method = "class") 
 })
 
 
 # tree summary
 output$treesummary <- renderPrint({
-  summary(treefit())
+  #summary(treefit())
+  print(treefit())
 })
 
 
 # classification tree plot
 output$treeplot <- renderPlot({
-
-  fancyRpartPlot(treefit())
+  #plot(treefit()$finalModel, main = "Classification Tree")
+  #text(treefit()$finalModel, pretty = 0, cex = 0.6)
+  fancyRpartPlot(treefit1())
 })
 
 
 
-#############################################################################################################
-# table for accuracy comparison
-output$accuracy <- renderTable({
-  fitglm <- fitglm()
-  treefit <- treefit()
-  fitrf <- fitrf()
-  
-  Aglm  <- fitglm$results %>% dplyr::select(Accuracy)
-  Atree <- treefit$results %>% filter(cp == treefit$bestTune$cp) %>% dplyr::select(Accuracy)
-  Arf   <- fitrf$results %>% filter(mtry == fitrf$bestTune$mtry) %>% dplyr::select(Accuracy)
-  
-  accuracy           <- cbind(Aglm, Atree, Arf)
-  colnames(accuracy) <- list("GLM", "Classification Tree", "Random Forest") 
-  
-  accuracy
+# confustion matrix for classification
+output$matrix_C <- renderPrint({
+  caret::confusionMatrix(data=predict(treefit1(), type = "class"), 
+                         reference = train_C()$STATUS, 
+                         positive="Closed")
 })
 
+################################################################################ FIT TO TEST DATA TAB
+
+fitTest <- eventReactive(input$run_compare, {
+  withProgress(message = 'Fit in progress. Please wait ...', {
+    #create test data
+    response   <- list(c("STATUS"))
+    selected   <- unlist(append(txtp(), response))    #glm
+    selected_C <- unlist(append(txtp_C(), response))
+    selected_R <- unlist(append(txtp_R(), response))
+    
+    testdata   <- test()[, selected]
+    testata_C  <- test_C()[, selected_C]
+    testdata_R <- test_R()[, selected_R]
+    
+    #prediction on test data
+    predGLM  <- predict(fitglm(), newdata = test())
+    predTree <- predict(treefit(), newdata = test_C())
+    predRF   <- predict(fitrf1(),   newdata = test_R())
+    #results
+    resampGLM  <- postResample(predGLM, obs = test()$STATUS)
+    resampTREE <- postResample(predTree, obs = test_C()$STATUS)
+    resampRF   <- postResample(predRF, obs = test_R()$STATUS)
+    #table
+    models  <- c("GLM", "Classification Tree", "Random Forest")
+    results <- data.frame(rbind(resampGLM, resampTREE, resampRF))
+    Final   <- cbind(models, results)
+
+    Final
+  })
+})
+
+#Fit Results
+output$finalResults   <- renderTable(fitTest())
 
 
-
-#############################################################################################################
-# PREDICTION TAB
-#
-
+################################################################################ PREDICTION TAB
 output$predResults <- eventReactive(input$run_predict, {
-#if (input$run_predict == 'glm') {
-    output$predResults <-renderText({"Prediction - Underconstruction for GLM, Classification Trees, and Random Forest" })
-#}
-#  else if(input$run_predict == 'tree') {
-#    output$predResults <-renderText({"Prediction - Underconstruction for Trees" })
-#}
-#  else if(input$run_predict == 'tree') {
-#    output$predResults <-renderText({"Prediction - Underconstruction for Random Forest" })
-#}
+  withProgress(message = 'Prediction in progress. Please wait ...', {
+      if (input$pickmodel == 'glm') {
+          output$predResults <-renderText({"Prediction - Underconstruction for GLM" })
+      }
+        else if(input$pickmodel == 'tree') {
+          output$predResults <-renderText({"Prediction - Underconstruction for Trees" })
+      }
+        else if(input$pickmodel == 'rf') {
+          output$predResults <-renderText({"Prediction - Underconstruction for Random Forest" })
+      }
+  })
 })
 
 
-#------- NOTES ----- complete once resolve modeling error
 
-# Get user predictions
-# varI <-eventReactive(input$run_predict,input$Division_ID)
-# varL <-eventReactive(input$run_predict,input$Location)
-# varT <-eventReactive(input$run_predict,input$Type)
-# varD <-eventReactive(input$run_predict,input$Detail)
-# varN <-eventReactive(input$run_predict,input$NIBRS)
-# varM <-eventReactive(input$run_predict,input$Month)
+# Get user selections
+varI <-eventReactive(input$run_predict,input$Division)
+varL <-eventReactive(input$run_predict,input$Location)
+varT <-eventReactive(input$run_predict,input$Type)
+varD <-eventReactive(input$run_predict,input$Detail)
+varN <-eventReactive(input$run_predict,input$NIBRS)
+varM <-eventReactive(input$run_predict,input$Month)
+
 
 
 # create data from predictions
-#selected_p <- unlist(append(varI,varL, varT, varD, varN, varM ))
-#newdata_p <- Test[, selected_p]
+predictData <- eventReactive(input$run_predict,{
+  
+  predictData <- data.frame(varI, varL, varT, varD, varN, varM)
+})
 
-#RF prediction
-#rfPredict     <-predict(fitrf, data=newdata_p) %>% as_tibble()
-#Random_Forest <- postResample(rfPredict(), obs = test_R$STATUS)
+# Get predictions
+prediction <- eventReactive(input$run_predict, {
+  
+  if (input$pickmodel == "glm") {
+    Predicted <- predict(fitglm(), newdata = predictData())
+    
+  } else if (input$pickmodel == "tree") {
+    Predicted <- predict(treefit(), newdata = predictData())
+    
+  } else {
+    Predicted <- predict(fitrf(), newdata = predictData())
+  }
+  
+})
 
-#LM prediction
-#treePredict   <-predict(fittree, data=newdata_p %>% as_tibble()
-#Glm           <-postResample(treePredict(), obs = test()$STATUS)
+
+# translate results
+output$predictResult <- renderText({
+  if (prediction() == "Open") { response = "Open"
+  } else {response = "Closed"}
+  
+  print(paste0("The Prediction of STATUS for your selection is ", response, "."))
+})
+
+
+
+
+
+
 
 
 
